@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Owls Net</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* Super simple styling for now */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            background: #0f172a;
+            color: #f9fafb;
+        }
+        header {
+            background: #020617;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+        .logo {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        nav a {
+            color: #e5e7eb;
+            margin-left: 1rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        main {
+            max-width: 960px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+        .hero-title {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .hero-subtitle {
+            font-size: 1.05rem;
+            color: #9ca3af;
+            max-width: 28rem;
+        }
+        .hero-actions {
+            margin-top: 1.5rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.7rem 1.3rem;
+            border-radius: 999px;
+            border: none;
+            text-decoration: none;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #38bdf8;
+            color: #020617;
+            font-weight: 600;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+            margin-left: 0.75rem;
+        }
+        .section {
+            margin-top: 3rem;
+        }
+        .section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .section p {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+        ul.feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul.feature-list li::before {
+            content: "•";
+            color: #38bdf8;
+            margin-right: 0.4rem;
+        }
+        footer {
+            margin-top: 4rem;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            border-top: 1px solid #1f2937;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">The Owls Net</div>
+        <nav>
+            <!-- these will later point to PHP pages -->
+            <a href="#">Login</a>
+            <a href="#">Register</a>
+            <a href="#">Feed</a>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h1 class="hero-title">Connect with your campus community.</h1>
+            <p class="hero-subtitle">
+                The Owls Net is a simple social space for students to share posts, follow classmates,
+                and see what&apos;s happening around SCSU.
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="#">Get Started</a>
+                <a class="btn btn-secondary" href="#">View Demo</a>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>What you can do</h2>
+            <ul class="feature-list">
+                <li>Create an account and manage your profile.</li>
+                <li>Post updates, questions, and announcements.</li>
+                <li>Like posts and see what’s trending.</li>
+                <li>Follow other students to build your feed.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>How it works (for our project)</h2>
+            <p>
+                This web app uses Apache, HTML, PHP, and MariaDB/MySQL. All posts, likes, and
+                profiles are stored in the <code>owlsnet</code> database that we designed.
+                This page is our starting point for the front-end; later we&apos;ll connect it to
+                PHP scripts for login, registration, and the live feed.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        The Owls Net &middot; CSC 335 &middot; Fall 2025
+    </footer>
+</body>
+</html>
