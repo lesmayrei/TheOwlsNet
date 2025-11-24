@@ -79,43 +79,19 @@
     <div class="container">
         <h1>Create Account</h1>
 
-        <!-- action="#" for now; later we’ll change this to register.php -->
-        <form action="#" method="POST">
+        <!-- Registration Form -->
+        <form action="register.php" method="POST">
             <label for="username">Username</label>
-            <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Choose a username"
-                required
-            >
+            <input type="text" id="username" name="username" placeholder="Choose a username" required>
 
             <label for="email">Email</label>
-            <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="yourname@owls.southernct.edu"
-                required
-            >
+            <input type="email" id="email" name="email" placeholder="yourname@owls.southernct.edu" required>
 
             <label for="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Create a password"
-                required
-            >
+            <input type="password" id="password" name="password" placeholder="Create a password" required>
 
             <label for="confirm_password">Confirm Password</label>
-            <input
-                type="password"
-                id="confirm_password"
-                name="confirm_password"
-                placeholder="Re-enter your password"
-                required
-            >
+            <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required>
 
             <button class="btn" type="submit">Create Account</button>
         </form>
