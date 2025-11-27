@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feed – The Owls Net</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #0f172a;
+            color: #f9fafb;
+            font-family: system-ui, sans-serif;
+            margin: 0;
+        }
+
+        header {
+            background: #020617;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .logo {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        nav a {
+            color: #e5e7eb;
+            margin-left: 1rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 2rem auto 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.7rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .new-post-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .new-post-card textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #f9fafb;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .new-post-card textarea:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .new-post-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #38bdf8;
+            color: #020617;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #0ea5e9;
+        }
+
+        .posts-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .post-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.4rem;
+        }
+
+        .post-author {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .post-username {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .post-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .post-body {
+            font-size: 0.95rem;
+            margin: 0.35rem 0 0.75rem 0;
+        }
+
+        .post-footer {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .post-footer button {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.85rem;
+        }
+
+        .post-footer button:hover {
+            color: #e5e7eb;
+            text-decoration: underline;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            border-top: 1px solid #1f2937;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">The Owls Net</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="feed.html">Feed</a>
+        <a href="profile.html">Profile</a>
+        <a href="login.html">Logout</a>
+    </nav>
+</header>
+
+<main>
+    <h1 class="page-title">Campus Feed</h1>
+    <p class="page-subtitle">
+        See what other students are posting. Later, this page will show live posts from the database.
+    </p>
+
+    <!-- Create post box (static for now; later this will submit to PHP) -->
+    <section class="new-post-card">
+        <form action="#" method="POST">
+            <label for="post_body" style="font-size:0.9rem; color:#cbd5e1; display:block; margin-bottom:0.3rem;">
+                Share something with your campus:
+            </label>
+            <textarea id="post_body" name="post_body" placeholder="What’s on your mind?" disabled></textarea>
+            <div class="new-post-actions">
+                <button class="btn btn-primary" type="submit" disabled>Post (coming soon)</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Posts list (sample data for now) -->
+    <section>
+        <ul class="posts-list">
+            <li class="post-card">
+                <div class="post-header">
+                    <div>
+                        <div class="post-author">Student One</div>
+                        <div class="post-username">@student1</div>
+                    </div>
+                    <div class="post-time">Nov 24, 2025 · 3:15 PM</div>
+                </div>
+                <p class="post-body">
+                    Just submitted my CSC 335 project proposal 👀 Anyone else building something with PHP + MariaDB?
+                </p>
+                <div class="post-footer">
+                    <button type="button">Like · 4</button>
+                    <button type="button">Comments · 2</button>
+                </div>
+            </li>
+
+            <li class="post-card">
+                <div class="post-header">
+                    <div>
+                        <div class="post-author">Student Two</div>
+                        <div class="post-username">@owl_life</div>
+                    </div>
+                    <div class="post-time">Nov 24, 2025 · 12:02 PM</div>
+                </div>
+                <p class="post-body">
+                    PSA: The library quiet floor is actually quiet today. Perfect spot for last-minute database homework.
+                </p>
+                <div class="post-footer">
+                    <button type="button">Like · 10</button>
+                    <button type="button">Comments · 3</button>
+                </div>
+            </li>
+
+            <li class="post-card">
+                <div class="post-header">
+                    <div>
+                        <div class="post-author">Student Three</div>
+                        <div class="post-username">@cs_major</div>
+                    </div>
+                    <div class="post-time">Nov 23, 2025 · 9:47 PM</div>
+                </div>
+                <p class="post-body">
+                    If anyone wants to form a study group for CSC 335 and practice SQL queries, DM me 👨‍💻
+                </p>
+                <div class="post-footer">
+                    <button type="button">Like · 7</button>
+                    <button type="button">Comments · 5</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    The Owls Net · CSC 335 · Feed Prototype
+</footer>
+
+</body>
+</html>

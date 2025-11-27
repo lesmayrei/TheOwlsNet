@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Following – The Owls Net</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #0f172a;
+            color: #f9fafb;
+            font-family: system-ui, sans-serif;
+            margin: 0;
+        }
+
+        header {
+            background: #020617;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .logo {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        nav a {
+            color: #e5e7eb;
+            margin-left: 1rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 2rem auto 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-summary {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .user-summary-name {
+            font-weight: 600;
+        }
+
+        .user-summary-username {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .following-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+        }
+
+        .following-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .following-count {
+            font-weight: 600;
+        }
+
+        .following-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .following-item {
+            padding: 0.6rem 0;
+            border-top: 1px solid #111827;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .following-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .following-name {
+            font-size: 0.95rem;
+        }
+
+        .following-username {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .back-link {
+            font-size: 0.9rem;
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            border-top: 1px solid #1f2937;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">The Owls Net</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="feed.html">Feed</a>
+        <a href="profile.html">Profile</a>
+        <a href="login.html">Logout</a>
+    </nav>
+</header>
+
+<main>
+    <a class="back-link" href="profile.html">← Back to profile</a>
+
+    <h1 class="page-title">Following</h1>
+    <p class="page-subtitle">
+        These are the accounts this user is following.
+    </p>
+
+    <!-- Summary of user's following count -->
+    <section class="user-summary">
+        <div class="user-summary-name">Student Name</div>
+        <div class="user-summary-username">@username</div>
+        <div style="margin-top:0.4rem; color:#cbd5e1; font-size:0.9rem;">
+            You are currently following <strong>3</strong> accounts.
+        </div>
+    </section>
+
+    <!-- Following list -->
+    <section class="following-card">
+        <div class="following-header">
+            <div class="following-count">3 following</div>
+            <div style="font-size:0.8rem; color:#9ca3af;">Sample data</div>
+        </div>
+
+        <ul class="following-list">
+            <li class="following-item">
+                <div class="following-main">
+                    <div class="following-name">Campus Events</div>
+                    <div class="following-username">@events_scsu</div>
+                </div>
+            </li>
+
+            <li class="following-item">
+                <div class="following-main">
+                    <div class="following-name">CS Study Group</div>
+                    <div class="following-username">@cs_study</div>
+                </div>
+            </li>
+
+            <li class="following-item">
+                <div class="following-main">
+                    <div class="following-name">Library Updates</div>
+                    <div class="following-username">@owl_library</div>
+                </div>
+            </li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    The Owls Net · CSC 335 · Following Page Prototype
+</footer>
+
+</body>
+</html>
