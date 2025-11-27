@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Post Likes – The Owls Net</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #0f172a;
+            color: #f9fafb;
+            font-family: system-ui, sans-serif;
+            margin: 0;
+        }
+
+        header {
+            background: #020617;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .logo {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        nav a {
+            color: #e5e7eb;
+            margin-left: 1rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 2rem auto 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .post-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.4rem;
+        }
+
+        .post-author {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .post-username {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .post-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .post-body {
+            font-size: 0.95rem;
+            margin-top: 0.35rem;
+        }
+
+        .likes-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+        }
+
+        .likes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .likes-count {
+            font-weight: 600;
+        }
+
+        .likes-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .like-item {
+            padding: 0.6rem 0;
+            border-top: 1px solid #111827;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .like-user {
+            font-size: 0.95rem;
+        }
+
+        .like-username {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .like-meta {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            border-top: 1px solid #1f2937;
+            text-align: center;
+        }
+
+        .back-link {
+            font-size: 0.9rem;
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">The Owls Net</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="feed.html">Feed</a>
+        <a href="profile.html">Profile</a>
+        <a href="login.html">Logout</a>
+    </nav>
+</header>
+
+<main>
+    <a class="back-link" href="feed.html">← Back to feed</a>
+
+    <h1 class="page-title">Likes on this post</h1>
+    <p class="page-subtitle">
+        This page shows the users who liked a specific post. Later, this will be generated
+        dynamically from the database.
+    </p>
+
+    <!-- Post preview -->
+    <section class="post-card">
+        <div class="post-header">
+            <div>
+                <div class="post-author">Student One</div>
+                <div class="post-username">@student1</div>
+            </div>
+            <div class="post-time">Nov 24, 2025 · 3:15 PM</div>
+        </div>
+        <p class="post-body">
+            Just submitted my CSC 335 project proposal 👀 Anyone else building something with PHP + MariaDB?
+        </p>
+    </section>
+
+    <!-- Likes list -->
+    <section class="likes-card">
+        <div class="likes-header">
+            <div class="likes-count">4 likes</div>
+            <div style="font-size:0.8rem; color:#9ca3af;">Sample data for now</div>
+        </div>
+
+        <ul class="likes-list">
+            <li class="like-item">
+                <div>
+                    <div class="like-user">Student Two</div>
+                    <div class="like-username">@owl_life</div>
+                </div>
+                <div class="like-meta">Liked · 3:20 PM</div>
+            </li>
+            <li class="like-item">
+                <div>
+                    <div class="like-user">Student Three</div>
+                    <div class="like-username">@cs_major</div>
+                </div>
+                <div class="like-meta">Liked · 3:22 PM</div>
+            </li>
+            <li class="like-item">
+                <div>
+                    <div class="like-user">Student Four</div>
+                    <div class="like-username">@bio_student</div>
+                </div>
+                <div class="like-meta">Liked · 3:30 PM</div>
+            </li>
+            <li class="like-item">
+                <div>
+                    <div class="like-user">Student Five</div>
+                    <div class="like-username">@night_owl</div>
+                </div>
+                <div class="like-meta">Liked · 3:45 PM</div>
+            </li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    The Owls Net · CSC 335 · Likes Page Prototype
+</footer>
+
+</body>
+</html>
