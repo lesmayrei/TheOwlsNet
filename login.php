@@ -1,45 +1,61 @@
 <?php
-include 'db.php';
+// Show PHP errors for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
+include 'DB.php'; // Make sure DB.php is in the same folder
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email = trim($_POST['email']);
-    $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    // Hash password
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-
-    // Prepare insert
+    // Lookup user in database
     $stmt = $conn->prepare(
-        "INSERT INTO users (email, username, password_hash, status, created_at) 
-         VALUES (?, ?, ?, 'active', NOW())"
+        "SELECT user_id, username, password_hash 
+         FROM users 
+         WHERE email = ? AND status = 'active'"
     );
-    $stmt->bind_param("sss", $email, $username, $password_hash);
 
-    if ($stmt->execute()) {
-        echo "Registration successful!";
+    if (!$stmt) {
+        die("Prepare failed: " . $conn->error);
+    }
 
-        // Auto-login after registration
-        $_SESSION['user_id'] = $stmt->insert_id;
-        $_SESSION['username'] = $username;
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
 
-        header("Location: dashboard.php");
-        exit();
+    if ($stmt->num_rows === 1) {
+
+        $stmt->bind_result($user_id, $username, $hashed_password);
+        $stmt->fetch();
+
+        if (password_verify($password, $hashed_password)) {
+
+            // Create session
+            $_SESSION['user_id'] = $user_id;
+            $_SESSION['username'] = $username;
+
+            // Update last login timestamp
+            $update = $conn->prepare("UPDATE users SET last_login_at = NOW() WHERE user_id = ?");
+            $update->bind_param("i", $user_id);
+            $update->execute();
+
+            // Redirect to index.html after successful login
+            header("Location: index.html");
+            exit();
+
+        } else {
+            echo "<p style='color:red; text-align:center;'>Incorrect password.</p>";
+        }
+
     } else {
-        echo "Error: " . $stmt->error;  // Shows duplicate email/username errors
+        echo "<p style='color:red; text-align:center;'>No account found with that email.</p>";
     }
 
     $stmt->close();
     $conn->close();
 }
 ?>
-
-<!-- simple HTML form -->
-<form action="register.php" method="POST">
-    <input type="email" name="email" placeholder="Enter email" required><br>
-    <input type="text" name="username" placeholder="Choose username" required><br>
-    <input type="password" name="password" placeholder="Create password" required><br>
-    <button type="submit">Register</button>
-</form>
