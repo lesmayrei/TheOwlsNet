@@ -1,4 +1,6 @@
-<?php session_start(); ?>
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +8,6 @@
     <title>The Owls Net</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        /* Super simple styling for now */
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
@@ -86,6 +87,11 @@
             list-style: none;
             padding-left: 0;
         }
+        ul.feature-list li {
+            font-size: 0.95rem;
+            color: #e5e7eb;
+            margin-bottom: 0.4rem;
+        }
         ul.feature-list li::before {
             content: "•";
             color: #38bdf8;
@@ -107,6 +113,8 @@
         <nav>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="feed.php">Feed</a>
+                <a href="profile.php">Profile</a>
+                <a href="logout.php">Logout</a>
             <?php else: ?>
                 <a href="login.php">Login</a>
                 <a href="register.php">Register</a>
@@ -119,11 +127,16 @@
         <section>
             <h1 class="hero-title">Connect with your campus community.</h1>
             <p class="hero-subtitle">
-                The Owls Net is a simple social space for students to share posts, follow classmates,
-                and see what&apos;s happening around SCSU.
+                The Owls Net is a simple space for students to share posts, follow classmates,
+                and see what is happening around SCSU.
             </p>
             <div class="hero-actions">
-                <a class="btn btn-primary" href="register.html">Get Started</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a class="btn btn-primary" href="feed.php">Go to your feed</a>
+                <?php else: ?>
+                    <a class="btn btn-primary" href="register.php">Get started</a>
+                    <a class="btn btn-secondary" href="login.php">Already have an account?</a>
+                <?php endif; ?>
             </div>
         </section>
 
@@ -132,11 +145,10 @@
             <ul class="feature-list">
                 <li>Create an account and manage your profile.</li>
                 <li>Post updates, questions, and announcements.</li>
-                <li>Like posts and see what’s trending.</li>
+                <li>Like posts and see what is trending.</li>
                 <li>Follow other students to build your feed.</li>
             </ul>
         </section>
-
     </main>
 
     <footer>
