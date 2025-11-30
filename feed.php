@@ -1,3 +1,46 @@
+<?php
+require_once 'DB.php';
+session_start();
+
+$userId = 1;
+if (isset($_SESSION['user_id'])) {
+    $userId = (int)$_SESSION['user_id'];
+}
+
+$postError = '';
+$posts = [];
+$postsCount = 0;
+
+if (!empty($conn) && !$conn->connect_error) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $body = '';
+        if (isset($_POST['post_body'])) {
+            $body = trim($_POST['post_body']);
+        }
+
+        if ($body === '') {
+            $postError = 'Post cannot be empty.';
+        } else {
+            $bodyEsc = $conn->real_escape_string($body);
+            $insertSql = "INSERT INTO posts (user_id, content, created_at) VALUES ($userId, '$bodyEsc', NOW())";
+            $conn->query($insertSql);
+            header('Location: feed.php');
+            exit;
+        }
+    }
+
+    $sql = "SELECT p.post_id, p.content, p.created_at, u.username FROM posts p JOIN users u ON p.user_id = u.user_id ORDER BY p.created_at DESC";
+    $res = $conn->query($sql);
+
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            $posts[] = $r;
+        }
+    }
+
+    $postsCount = count($posts);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -168,7 +211,7 @@
 
         footer {
             margin-top: 3rem;
-            padding: 1.5rem 2rem;
+            padding: 1.5rem;
             font-size: 0.8rem;
             color: #6b7280;
             border-top: 1px solid #1f2937;
@@ -182,7 +225,7 @@
     <div class="logo">The Owls Net</div>
     <nav>
         <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
+        <a href="feed.php">Feed</a>
         <a href="profile.html">Profile</a>
         <a href="login.html">Logout</a>
     </nav>
@@ -191,81 +234,59 @@
 <main>
     <h1 class="page-title">Campus Feed</h1>
     <p class="page-subtitle">
-        See what other students are posting. Later, this page will show live posts from the database.
+        See what other students are posting right now.
     </p>
 
-    <!-- Create post box (static for now; later this will submit to PHP) -->
     <section class="new-post-card">
-        <form action="#" method="POST">
+        <form action="feed.php" method="POST">
             <label for="post_body" style="font-size:0.9rem; color:#cbd5e1; display:block; margin-bottom:0.3rem;">
                 Share something with your campus:
             </label>
-            <textarea id="post_body" name="post_body" placeholder="What’s on your mind?" disabled></textarea>
+            <textarea id="post_body" name="post_body" placeholder="What's on your mind?"></textarea>
+
+            <?php if ($postError !== ''): ?>
+                <p style="margin-top:0.5rem; font-size:0.85rem; color:#fca5a5;">
+                    <?php echo $postError; ?>
+                </p>
+            <?php endif; ?>
+
             <div class="new-post-actions">
-                <button class="btn btn-primary" type="submit" disabled>Post (coming soon)</button>
+                <button class="btn btn-primary" type="submit">Post</button>
             </div>
         </form>
     </section>
 
-    <!-- Posts list (sample data for now) -->
     <section>
-        <ul class="posts-list">
-            <li class="post-card">
-                <div class="post-header">
-                    <div>
-                        <div class="post-author">Student One</div>
-                        <div class="post-username">@student1</div>
-                    </div>
-                    <div class="post-time">Nov 24, 2025 · 3:15 PM</div>
-                </div>
-                <p class="post-body">
-                    Just submitted my CSC 335 project proposal 👀 Anyone else building something with PHP + MariaDB?
-                </p>
-                <div class="post-footer">
-                    <button type="button">Like · 4</button>
-                    <button type="button">Comments · 2</button>
-                </div>
-            </li>
-
-            <li class="post-card">
-                <div class="post-header">
-                    <div>
-                        <div class="post-author">Student Two</div>
-                        <div class="post-username">@owl_life</div>
-                    </div>
-                    <div class="post-time">Nov 24, 2025 · 12:02 PM</div>
-                </div>
-                <p class="post-body">
-                    PSA: The library quiet floor is actually quiet today. Perfect spot for last-minute database homework.
-                </p>
-                <div class="post-footer">
-                    <button type="button">Like · 10</button>
-                    <button type="button">Comments · 3</button>
-                </div>
-            </li>
-
-            <li class="post-card">
-                <div class="post-header">
-                    <div>
-                        <div class="post-author">Student Three</div>
-                        <div class="post-username">@cs_major</div>
-                    </div>
-                    <div class="post-time">Nov 23, 2025 · 9:47 PM</div>
-                </div>
-                <p class="post-body">
-                    If anyone wants to form a study group for CSC 335 and practice SQL queries, DM me 👨‍💻
-                </p>
-                <div class="post-footer">
-                    <button type="button">Like · 7</button>
-                    <button type="button">Comments · 5</button>
-                </div>
-            </li>
-        </ul>
+        <?php if ($postsCount === 0): ?>
+            <p style="font-size:0.9rem; color:#9ca3af;">
+                No posts yet. Once people start posting, they will show up here.
+            </p>
+        <?php else: ?>
+            <ul class="posts-list">
+                <?php foreach ($posts as $p): ?>
+                    <li class="post-card">
+                        <div class="post-header">
+                            <div>
+                                <div class="post-author"><?php echo $p['username']; ?></div>
+                                <div class="post-username"><?php echo '@' . $p['username']; ?></div>
+                            </div>
+                            <div class="post-time"><?php echo $p['created_at']; ?></div>
+                        </div>
+                        <p class="post-body">
+                            <?php echo $p['content']; ?>
+                        <div class="post-footer">
+                            <button type="button">Like</button>
+                            <button type="button">Comments</button>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
     </section>
 </main>
 
 <footer>
-    The Owls Net · CSC 335 · Feed Prototype
+    The Owls Net · CSC 335
 </footer>
 
 </body>
