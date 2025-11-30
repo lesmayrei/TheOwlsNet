@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,10 +105,13 @@
     <header>
         <div class="logo">The Owls Net</div>
         <nav>
-            <!-- these will later point to PHP pages -->
-            <a href="login.html">Login</a>
-            <a href="register.html">Register</a>
-            <a href="feed.php">Feed</a>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="feed.php">Feed</a>
+            <?php else: ?>
+                <a href="login.php">Login</a>
+                <a href="register.php">Register</a>
+                <a href="feed.php">Feed</a>
+            <?php endif; ?>
         </nav>
     </header>
 
