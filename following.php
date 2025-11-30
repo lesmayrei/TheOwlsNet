@@ -1,8 +1,41 @@
+```php
+<?php
+require_once 'DB.php';
+
+$userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 1;
+$displayName = 'User';
+$atName = '@user';
+$following = [];
+$followingCount = 0;
+
+if (!empty($conn) && !$conn->connect_error) {
+    $userSql = "SELECT u.username, p.profile_id FROM users u JOIN profiles p ON u.user_id = p.user_id WHERE u.user_id = $userId LIMIT 1";
+    $userRes = $conn->query($userSql);
+
+    if ($userRes && $userRes->num_rows > 0) {
+        $u = $userRes->fetch_assoc();
+        $displayName = $u['username'];
+        $atName = '@' . $u['username'];
+        $profileId = (int)$u['profile_id'];
+
+        $followSql = "SELECT u.username, u.email FROM follows f JOIN profiles p ON f.profile_id = p.profile_id JOIN users u ON p.user_id = u.user_id WHERE f.user_id = $userId ORDER BY u.username";
+        $followRes = $conn->query($followSql);
+
+        if ($followRes) {
+            while ($row = $followRes->fetch_assoc()) {
+                $following[] = $row;
+            }
+        }
+
+        $followingCount = count($following);
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Following – The Owls Net</title>
+    <title>Following</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
@@ -152,55 +185,51 @@
 <main>
     <a class="back-link" href="profile.html">← Back to profile</a>
 
-    <h1 class="page-title">Following</h1>
-    <p class="page-subtitle">
-        These are the accounts this user is following.
-    </p>
+    <h1 class="page-title">People you follow</h1>
+    <p class="page-subtitle">Accounts you are following.</p>
 
-    <!-- Summary of user's following count -->
     <section class="user-summary">
-        <div class="user-summary-name">Student Name</div>
-        <div class="user-summary-username">@username</div>
+        <div class="user-summary-name">
+            <?php echo $displayName; ?>
+        </div>
+        <div class="user-summary-username">
+            <?php echo $atName; ?>
+        </div>
         <div style="margin-top:0.4rem; color:#cbd5e1; font-size:0.9rem;">
-            You are currently following <strong>3</strong> accounts.
+            You are following <strong><?php echo $followingCount; ?></strong> account(s).
         </div>
     </section>
 
-    <!-- Following list -->
     <section class="following-card">
         <div class="following-header">
-            <div class="following-count">3 following</div>
-            <div style="font-size:0.8rem; color:#9ca3af;">Sample data</div>
+            <div class="following-count">
+                Following (<?php echo $followingCount; ?>)
+            </div>
         </div>
 
-        <ul class="following-list">
-            <li class="following-item">
-                <div class="following-main">
-                    <div class="following-name">Campus Events</div>
-                    <div class="following-username">@events_scsu</div>
-                </div>
-            </li>
-
-            <li class="following-item">
-                <div class="following-main">
-                    <div class="following-name">CS Study Group</div>
-                    <div class="following-username">@cs_study</div>
-                </div>
-            </li>
-
-            <li class="following-item">
-                <div class="following-main">
-                    <div class="following-name">Library Updates</div>
-                    <div class="following-username">@owl_library</div>
-                </div>
-            </li>
-        </ul>
+        <?php if ($followingCount <= 0): ?>
+            <p style="font-size:0.9rem; color:#9ca3af;">
+                Following 0 pages.
+            </p>
+        <?php else: ?>
+            <ul class="following-list">
+                <?php foreach ($following as $p): ?>
+                <li class="following-item">
+                    <div class="following-main">
+                        <div class="following-name"><?php echo $p['username']; ?></div>
+                        <div class="following-username"><?php echo '@' . $p['username']; ?></div>
+                    </div>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
     </section>
 </main>
 
 <footer>
-    The Owls Net · CSC 335 · Following Page Prototype
+    The Owls Net · CSC 335 ·
 </footer>
 
 </body>
 </html>
+```
