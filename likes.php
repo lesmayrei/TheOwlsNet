@@ -1,8 +1,38 @@
+<?php
+require_once 'DB.php';
+
+$postId = isset($_GET['post_id']) ? (int)$_GET['post_id'] : 0;
+$post = null;
+$likes = [];
+$likesCount = 0;
+
+if (isset($conn) && !$conn->connect_error) {
+    if ($postId > 0) {
+        $sqlPost = "SELECT p.post_id, p.body_txt, p.created_at, u.username FROM posts p JOIN users u ON p.author_id = u.user_id WHERE p.post_id = $postId LIMIT 1";
+        $resPost = $conn->query($sqlPost);
+
+        if ($resPost && $resPost->num_rows === 1) {
+            $post = $resPost->fetch_assoc();
+        }
+
+        $sqlLikes = "SELECT u.username, u.email, l.created_at FROM likes l JOIN users u ON l.user_id = u.user_id WHERE l.post_id = $postId ORDER BY l.created_at DESC";
+        $resLikes = $conn->query($sqlLikes);
+
+        if ($resLikes) {
+            while ($row = $resLikes->fetch_assoc()) {
+                $likes[] = $row;
+            }
+        }
+
+        $likesCount = count($likes);
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Post Likes – The Owls Net</title>
+    <title>Post Likes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
@@ -161,72 +191,60 @@
     <div class="logo">The Owls Net</div>
     <nav>
         <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
+        <a href="feed.php">Feed</a>
         <a href="profile.html">Profile</a>
         <a href="login.html">Logout</a>
     </nav>
 </header>
 
 <main>
-    <a class="back-link" href="feed.html">← Back to feed</a>
+    <a class="back-link" href="feed.php">← Back to feed</a>
 
     <h1 class="page-title">Likes on this post</h1>
-    <p class="page-subtitle">
-        This page shows the users who liked a specific post. Later, this will be generated
-        dynamically from the database.
-    </p>
 
-    <!-- Post preview -->
+    <?php if ($post): ?>
     <section class="post-card">
         <div class="post-header">
             <div>
-                <div class="post-author">Student One</div>
-                <div class="post-username">@student1</div>
+                <div class="post-author"><?php echo $post['username']; ?></div>
+                <div class="post-username"><?php echo '@' . $post['username']; ?></div>
             </div>
-            <div class="post-time">Nov 24, 2025 · 3:15 PM</div>
+            <div class="post-time"><?php echo $post['created_at']; ?></div>
         </div>
         <p class="post-body">
-            Just submitted my CSC 335 project proposal 👀 Anyone else building something with PHP + MariaDB?
+            <?php echo $post['body_txt']; ?>
         </p>
     </section>
+    <?php else: ?>
+    <p class="page-subtitle">
+        Post not found.
+    </p>
+    <?php endif; ?>
 
-    <!-- Likes list -->
     <section class="likes-card">
         <div class="likes-header">
-            <div class="likes-count">4 likes</div>
-            <div style="font-size:0.8rem; color:#9ca3af;">Sample data for now</div>
+            <div class="likes-count"><?php echo $likesCount; ?> like(s)</div>
         </div>
 
-        <ul class="likes-list">
-            <li class="like-item">
-                <div>
-                    <div class="like-user">Student Two</div>
-                    <div class="like-username">@owl_life</div>
-                </div>
-                <div class="like-meta">Liked · 3:20 PM</div>
-            </li>
-            <li class="like-item">
-                <div>
-                    <div class="like-user">Student Three</div>
-                    <div class="like-username">@cs_major</div>
-                </div>
-                <div class="like-meta">Liked · 3:22 PM</div>
-            </li>
-            <li class="like-item">
-                <div>
-                    <div class="like-user">Student Four</div>
-                    <div class="like-username">@bio_student</div>
-                </div>
-                <div class="like-meta">Liked · 3:30 PM</div>
-            </li>
-            <li class="like-item">
-                <div>
-                    <div class="like-user">Student Five</div>
-                    <div class="like-username">@night_owl</div>
-                </div>
-                <div class="like-meta">Liked · 3:45 PM</div>
-            </li>
-        </ul>
+        <?php if ($likesCount === 0): ?>
+            <p style="font-size:0.9rem; color:#9ca3af;">
+                No likes yet for this post.
+            </p>
+        <?php else: ?>
+            <ul class="likes-list">
+                <?php foreach ($likes as $l): ?>
+                    <li class="like-item">
+                        <div>
+                            <div class="like-user"><?php echo $l['username']; ?></div>
+                            <div class="like-username"><?php echo '@' . $l['username']; ?></div>
+                        </div>
+                        <div class="like-meta">
+                            Liked · <?php echo $l['created_at']; ?>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
     </section>
 </main>
 
