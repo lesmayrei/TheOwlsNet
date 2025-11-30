@@ -21,6 +21,7 @@ $deactivateMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
     $formType = $_POST['form_type'];
 
+    // change username
     if ($formType === 'username') {
         $newUsername = isset($_POST['new_username']) ? trim($_POST['new_username']) : '';
         if ($newUsername === '') {
@@ -44,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
                 $usernameMsg = 'Database connection error.';
             }
         }
+
+    // change password
     } elseif ($formType === 'password') {
         $current = isset($_POST['current_password']) ? $_POST['current_password'] : '';
         $new = isset($_POST['new_password']) ? $_POST['new_password'] : '';
@@ -59,22 +62,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
                 if ($stmt) {
                     $stmt->bind_param('i', $userId);
                     $stmt->execute();
+                    $stmt->store_result();
                     $stmt->bind_result($hash);
-                    if ($stmt->fetch()) {
+
+                    if ($stmt->num_rows === 1 && $stmt->fetch()) {
                         if (password_verify($current, $hash)) {
                             $stmt->close();
                             $newHash = password_hash($new, PASSWORD_BCRYPT);
+
                             $upd = $conn->prepare('UPDATE users SET password_hash = ? WHERE user_id = ?');
                             if ($upd) {
                                 $upd->bind_param('si', $newHash, $userId);
                                 if ($upd->execute()) {
                                     $passwordMsg = 'Password updated.';
                                 } else {
-                                    $passwordMsg = 'Could not update password.';
+                                    $passwordMsg = 'Could not update password: ' . $conn->error;
                                 }
                                 $upd->close();
                             } else {
-                                $passwordMsg = 'Could not update password.';
+                                $passwordMsg = 'Could not update password (prepare failed).';
                             }
                         } else {
                             $passwordMsg = 'Current password is incorrect.';
@@ -85,12 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
                         $stmt->close();
                     }
                 } else {
-                    $passwordMsg = 'Could not update password.';
+                    $passwordMsg = 'Could not update password (prepare failed).';
                 }
             } else {
                 $passwordMsg = 'Database connection error.';
             }
         }
+
+    // visibility
     } elseif ($formType === 'visibility') {
         $visibility = isset($_POST['visibility']) ? $_POST['visibility'] : 'public';
         if (isset($conn) && !$conn->connect_error) {
@@ -109,6 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
         } else {
             $visibilityMsg = 'Database connection error.';
         }
+
+    // deactivate
     } elseif ($formType === 'deactivate') {
         if (isset($conn) && !$conn->connect_error) {
             $stmt = $conn->prepare("UPDATE users SET status = 'inactive' WHERE user_id = ?");
@@ -326,7 +336,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
     <h1 class="page-title">Account Settings</h1>
     <p class="page-subtitle">
         Manage your username, password, profile visibility, and account status.
-        (Later, this page will be connected to PHP and the database.)
     </p>
 
     <!-- Change username -->
@@ -429,7 +438,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
         <h2>Deactivate account</h2>
         <p class="danger-text">
             Deactivating your account will disable your profile and hide your posts from the feed.
-            You can describe the exact behavior here when you implement it.
         </p>
 
         <form action="settings.php" method="POST">
