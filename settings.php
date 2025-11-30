@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
     } elseif ($formType === 'visibility') {
         $visibility = isset($_POST['visibility']) ? $_POST['visibility'] : 'public';
         if (isset($conn) && !$conn->connect_error) {
-            $stmt = $conn->prepare('UPDATE profiles SET visibility = ? WHERE user_id = ?');
+            $stmt = $conn->prepare('UPDATE profiles SET profile_visibility = ? WHERE user_id = ?');
             if ($stmt) {
                 $stmt->bind_param('si', $visibility, $userId);
                 if ($stmt->execute()) {
@@ -425,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
             </div>
 
             <div class="btn-row">
-                <button type="submit" class="btn btn-primary">Save visibility</button>
+                <button type="submit" class="btn btn-primary">Save</button>
             </div>
             <?php if ($visibilityMsg !== ''): ?>
                 <p class="message"><?php echo $visibilityMsg; ?></p>
