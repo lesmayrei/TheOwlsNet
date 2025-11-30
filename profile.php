@@ -1,3 +1,68 @@
+<?php
+session_start();
+require_once 'DB.php';
+
+$userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+
+$name = 'Student Name';
+$handle = '@username';
+$email = 'yourname@owls.southernct.edu';
+$joinedAt = '';
+$followersCount = 0;
+$followingCount = 0;
+$totalPosts = 0;
+$recentPosts = [];
+
+if ($userId > 0 && isset($conn) && !$conn->connect_error) {
+    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $userId LIMIT 1";
+    $resUser = $conn->query($sqlUser);
+
+    if ($resUser && $resUser->num_rows === 1) {
+        $u = $resUser->fetch_assoc();
+        $email = $u['email'];
+        $name = $u['username'];
+        $handle = '@' . $u['username'];
+        $joinedAt = $u['created_at'];
+    }
+
+    $sqlProfile = "SELECT profile_id FROM profiles WHERE user_id = $userId LIMIT 1";
+    $resProfile = $conn->query($sqlProfile);
+
+    if ($resProfile && $resProfile->num_rows === 1) {
+        $p = $resProfile->fetch_assoc();
+        $profileId = (int)$p['profile_id'];
+
+        $sqlFollowersCount = "SELECT COUNT(*) AS c FROM follows WHERE profile_id = $profileId";
+        $resFollowersCount = $conn->query($sqlFollowersCount);
+        if ($resFollowersCount) {
+            $rowF = $resFollowersCount->fetch_assoc();
+            $followersCount = (int)$rowF['c'];
+        }
+    }
+
+    $sqlFollowingCount = "SELECT COUNT(*) AS c FROM follows WHERE user_id = $userId";
+    $resFollowingCount = $conn->query($sqlFollowingCount);
+    if ($resFollowingCount) {
+        $rowFo = $resFollowingCount->fetch_assoc();
+        $followingCount = (int)$rowFo['c'];
+    }
+
+    $sqlPostsCount = "SELECT COUNT(*) AS c FROM posts WHERE author_id = $userId AND (deleted_at IS NULL)";
+    $resPostsCount = $conn->query($sqlPostsCount);
+    if ($resPostsCount) {
+        $rowP = $resPostsCount->fetch_assoc();
+        $totalPosts = (int)$rowP['c'];
+    }
+
+    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $userId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
+    $resRecent = $conn->query($sqlRecent);
+    if ($resRecent) {
+        while ($row = $resRecent->fetch_assoc()) {
+            $recentPosts[] = $row;
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,12 +227,11 @@
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <!-- Later these will point to PHP pages for logged-in users -->
-        <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
-        <a href="profile.html">Profile</a>
-       <a href="settings.html">Settings</a>
-	 <a href="#">Logout</a>
+        <a href="index.php">Home</a>
+        <a href="feed.php">Feed</a>
+        <a href="profile.php">Profile</a>
+        <a href="settings.php">Settings</a>
+        <a href="logout.php">Logout</a>
     </nav>
 </header>
 
@@ -175,10 +239,9 @@
     <!-- Top section: basic profile info + stats -->
     <section class="profile-header">
         <div class="profile-main">
-            <!-- These values will be dynamic later (from database) -->
-            <h1 class="profile-name">Student Name</h1>
-            <div class="profile-username">@username</div>
-            <div class="profile-email">yourname@owls.southernct.edu</div>
+            <h1 class="profile-name"><?php echo $name; ?></h1>
+            <div class="profile-username"><?php echo $handle; ?></div>
+            <div class="profile-email"><?php echo $email; ?></div>
 
             <div class="profile-actions">
                 <a href="#" class="btn">Edit profile</a>
@@ -186,25 +249,29 @@
         </div>
 
         <aside class="stats-card">
-        <div class="stats-row">
-    <span>Followers</span>
-    <span>
-        <a href="followers.php?user_id=1" style="color:#38bdf8; text-decoration:none;">0</a>
-    </span>
-</div>   
-<div class="stats-row">
-    <span>Following</span>
-    <span>
-        <a href="following.html" style="color:#38bdf8; text-decoration:none;">0</a>
-    </span>
-</div>
+            <div class="stats-row">
+                <span>Followers</span>
+                <span>
+                    <a href="followers.php?user_id=<?php echo $userId; ?>" style="color:#38bdf8; text-decoration:none;">
+                        <?php echo $followersCount; ?>
+                    </a>
+                </span>
+            </div>
+            <div class="stats-row">
+                <span>Following</span>
+                <span>
+                    <a href="following.php?user_id=<?php echo $userId; ?>" style="color:#38bdf8; text-decoration:none;">
+                        <?php echo $followingCount; ?>
+                    </a>
+                </span>
+            </div>
             <div class="stats-row">
                 <span>Total posts</span>
-                <span>0</span>
+                <span><?php echo $totalPosts; ?></span>
             </div>
             <div class="stats-row">
                 <span>Joined</span>
-                <span>Nov 2025</span>
+                <span><?php echo $joinedAt !== '' ? $joinedAt : 'N/A'; ?></span>
             </div>
         </aside>
     </section>
@@ -221,24 +288,20 @@
     <!-- Recent posts section -->
     <section class="section">
         <h2>Recent posts</h2>
-        <p style="color:#9ca3af; font-size:0.9rem;">
-            When you create posts, they&apos;ll show up here. For now, this is sample data.
-        </p>
-
+        <?php if (empty($recentPosts)): ?>
+            <p style="color:#9ca3af; font-size:0.9rem;">You don't have any posts yet.</p>
+        <?php else: ?>
         <ul class="posts-list">
-            <li class="post-item">
-                <div class="post-meta">Nov 24, 2025 · 10:30 AM</div>
-                <div class="post-body">
-                    Excited to try out The Owls Net and connect with other students this semester!
-                </div>
-            </li>
-            <li class="post-item">
-                <div class="post-meta">Nov 23, 2025 · 8:12 PM</div>
-                <div class="post-body">
-                    Does anyone have recommendations for quiet study spots on campus?
-                </div>
-            </li>
+            <?php foreach ($recentPosts as $post): ?>
+                <li class="post-item">
+                    <div class="post-meta"><?php echo $post['created_at']; ?></div>
+                    <div class="post-body">
+                        <?php echo $post['body_txt']; ?>
+                    </div>
+                </li>
+            <?php endforeach; ?>
         </ul>
+        <?php endif; ?>
     </section>
 </main>
 

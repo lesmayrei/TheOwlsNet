@@ -1,3 +1,138 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+session_start();
+require_once 'DB.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+$userId = (int)$_SESSION['user_id'];
+
+$usernameMsg = '';
+$passwordMsg = '';
+$visibilityMsg = '';
+$deactivateMsg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_type'])) {
+    $formType = $_POST['form_type'];
+
+    if ($formType === 'username') {
+        $newUsername = isset($_POST['new_username']) ? trim($_POST['new_username']) : '';
+        if ($newUsername === '') {
+            $usernameMsg = 'Please enter a new username.';
+        } else {
+            if (isset($conn) && !$conn->connect_error) {
+                $stmt = $conn->prepare('UPDATE users SET username = ? WHERE user_id = ?');
+                if ($stmt) {
+                    $stmt->bind_param('si', $newUsername, $userId);
+                    if ($stmt->execute()) {
+                        $usernameMsg = 'Username updated.';
+                        $_SESSION['username'] = $newUsername;
+                    } else {
+                        $usernameMsg = 'Could not update username.';
+                    }
+                    $stmt->close();
+                } else {
+                    $usernameMsg = 'Could not update username.';
+                }
+            } else {
+                $usernameMsg = 'Database connection error.';
+            }
+        }
+    } elseif ($formType === 'password') {
+        $current = isset($_POST['current_password']) ? $_POST['current_password'] : '';
+        $new = isset($_POST['new_password']) ? $_POST['new_password'] : '';
+        $confirm = isset($_POST['confirm_new_password']) ? $_POST['confirm_new_password'] : '';
+
+        if ($current === '' || $new === '' || $confirm === '') {
+            $passwordMsg = 'Please fill in all password fields.';
+        } elseif ($new !== $confirm) {
+            $passwordMsg = 'New passwords do not match.';
+        } else {
+            if (isset($conn) && !$conn->connect_error) {
+                $stmt = $conn->prepare('SELECT password_hash FROM users WHERE user_id = ? LIMIT 1');
+                if ($stmt) {
+                    $stmt->bind_param('i', $userId);
+                    $stmt->execute();
+                    $stmt->bind_result($hash);
+                    if ($stmt->fetch()) {
+                        if (password_verify($current, $hash)) {
+                            $stmt->close();
+                            $newHash = password_hash($new, PASSWORD_BCRYPT);
+                            $upd = $conn->prepare('UPDATE users SET password_hash = ? WHERE user_id = ?');
+                            if ($upd) {
+                                $upd->bind_param('si', $newHash, $userId);
+                                if ($upd->execute()) {
+                                    $passwordMsg = 'Password updated.';
+                                } else {
+                                    $passwordMsg = 'Could not update password.';
+                                }
+                                $upd->close();
+                            } else {
+                                $passwordMsg = 'Could not update password.';
+                            }
+                        } else {
+                            $passwordMsg = 'Current password is incorrect.';
+                            $stmt->close();
+                        }
+                    } else {
+                        $passwordMsg = 'Could not load current password.';
+                        $stmt->close();
+                    }
+                } else {
+                    $passwordMsg = 'Could not update password.';
+                }
+            } else {
+                $passwordMsg = 'Database connection error.';
+            }
+        }
+    } elseif ($formType === 'visibility') {
+        $visibility = isset($_POST['visibility']) ? $_POST['visibility'] : 'public';
+        if (isset($conn) && !$conn->connect_error) {
+            $stmt = $conn->prepare('UPDATE profiles SET visibility = ? WHERE user_id = ?');
+            if ($stmt) {
+                $stmt->bind_param('si', $visibility, $userId);
+                if ($stmt->execute()) {
+                    $visibilityMsg = 'Profile visibility updated.';
+                } else {
+                    $visibilityMsg = 'Could not update visibility.';
+                }
+                $stmt->close();
+            } else {
+                $visibilityMsg = 'Could not update visibility.';
+            }
+        } else {
+            $visibilityMsg = 'Database connection error.';
+        }
+    } elseif ($formType === 'deactivate') {
+        if (isset($conn) && !$conn->connect_error) {
+            $stmt = $conn->prepare("UPDATE users SET status = 'inactive' WHERE user_id = ?");
+            if ($stmt) {
+                $stmt->bind_param('i', $userId);
+                if ($stmt->execute()) {
+                    $deactivateMsg = 'Account deactivated.';
+                    session_unset();
+                    session_destroy();
+                    header('Location: index.php');
+                    exit();
+                } else {
+                    $deactivateMsg = 'Could not deactivate account.';
+                }
+                $stmt->close();
+            } else {
+                $deactivateMsg = 'Could not deactivate account.';
+            }
+        } else {
+            $deactivateMsg = 'Database connection error.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -158,6 +293,12 @@
             font-size: 0.9rem;
         }
 
+        .message {
+            margin-top: 0.6rem;
+            font-size: 0.9rem;
+            color: #e5e7eb;
+        }
+
         footer {
             margin-top: 3rem;
             padding: 1.5rem 2rem;
@@ -173,11 +314,11 @@
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
-        <a href="profile.html">Profile</a>
-        <a href="settings.html">Settings</a>
-        <a href="login.html">Logout</a>
+        <a href="index.php">Home</a>
+        <a href="feed.php">Feed</a>
+        <a href="profile.php">Profile</a>
+        <a href="settings.php">Settings</a>
+        <a href="logout.php">Logout</a>
     </nav>
 </header>
 
@@ -193,7 +334,8 @@
         <h2>Change username</h2>
         <p>Update the username that other students see on your profile and posts.</p>
 
-        <form action="#" method="POST">
+        <form action="settings.php" method="POST">
+            <input type="hidden" name="form_type" value="username">
             <label for="new_username">New username</label>
             <input
                 type="text"
@@ -206,6 +348,9 @@
             <div class="btn-row">
                 <button type="submit" class="btn btn-primary">Save username</button>
             </div>
+            <?php if ($usernameMsg !== ''): ?>
+                <p class="message"><?php echo $usernameMsg; ?></p>
+            <?php endif; ?>
         </form>
     </section>
 
@@ -214,7 +359,8 @@
         <h2>Change password</h2>
         <p>Choose a new password to secure your account.</p>
 
-        <form action="#" method="POST">
+        <form action="settings.php" method="POST">
+            <input type="hidden" name="form_type" value="password">
             <label for="current_password">Current password</label>
             <input
                 type="password"
@@ -245,6 +391,9 @@
             <div class="btn-row">
                 <button type="submit" class="btn btn-primary">Save password</button>
             </div>
+            <?php if ($passwordMsg !== ''): ?>
+                <p class="message"><?php echo $passwordMsg; ?></p>
+            <?php endif; ?>
         </form>
     </section>
 
@@ -253,7 +402,8 @@
         <h2>Profile visibility</h2>
         <p>Choose whether your profile is public or only visible to approved followers.</p>
 
-        <form action="#" method="POST">
+        <form action="settings.php" method="POST">
+            <input type="hidden" name="form_type" value="visibility">
             <div class="radio-group">
                 <label>
                     <input type="radio" name="visibility" value="public" checked>
@@ -268,6 +418,9 @@
             <div class="btn-row">
                 <button type="submit" class="btn btn-primary">Save visibility</button>
             </div>
+            <?php if ($visibilityMsg !== ''): ?>
+                <p class="message"><?php echo $visibilityMsg; ?></p>
+            <?php endif; ?>
         </form>
     </section>
 
@@ -279,10 +432,14 @@
             You can describe the exact behavior here when you implement it.
         </p>
 
-        <form action="#" method="POST">
+        <form action="settings.php" method="POST">
+            <input type="hidden" name="form_type" value="deactivate">
             <div class="btn-row">
                 <button type="submit" class="btn btn-danger">Deactivate account</button>
             </div>
+            <?php if ($deactivateMsg !== ''): ?>
+                <p class="message"><?php echo $deactivateMsg; ?></p>
+            <?php endif; ?>
         </form>
     </section>
 </main>

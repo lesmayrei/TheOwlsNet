@@ -176,9 +176,9 @@ if (!empty($conn) && !$conn->connect_error) {
     <div class="logo">The Owls Net</div>
     <nav>
         <a href="index.php">Home</a>
-        <a href="feed.html">Feed</a>
-        <a href="profile.html">Profile</a>
-        <a href="login.html">Logout</a>
+        <a href="feed.php">Feed</a>
+        <a href="profile.php">Profile</a>
+        <a href="logout.php">Logout</a>
     </nav>
 </header>
 
