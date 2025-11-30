@@ -190,7 +190,7 @@ if (isset($conn) && !$conn->connect_error) {
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <a href="index.html">Home</a>
+        <a href="index.php">Home</a>
         <a href="feed.php">Feed</a>
         <a href="profile.html">Profile</a>
         <a href="login.html">Logout</a>
