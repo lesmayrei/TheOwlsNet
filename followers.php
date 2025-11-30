@@ -1,65 +1,32 @@
 <?php
-// Include database connection
-require_once 'DB.php'; // assumes DB.php creates $conn (mysqli)
+require_once 'DB.php';
 
-// Get user_id from the URL, e.g. followers.php?user_id=1
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 1;
-
-// Prepare variables
-$userName = "Student Name";
-$userUsername = "@username";
-$followersCount = 0;
+$name = 'User';
+$handle = '@user';
 $followers = [];
+$followersCount = 0;
 
-// Only proceed if we have a DB connection
 if (isset($conn) && !$conn->connect_error) {
+    $sqlUser = "SELECT u.username, p.profile_id FROM users u JOIN profiles p ON u.user_id = p.user_id WHERE u.user_id = $userId LIMIT 1";
+    $resUser = $conn->query($sqlUser);
 
-    // 1. Get basic user/profile info
-    $sqlUser = "
-        SELECT u.user_id, u.username, u.email, p.profile_id
-        FROM users u
-        JOIN profiles p ON u.user_id = p.user_id
-        WHERE u.user_id = $userId
-        LIMIT 1
-    ";
-    $resultUser = $conn->query($sqlUser);
+    if ($resUser && $resUser->num_rows === 1) {
+        $u = $resUser->fetch_assoc();
+        $name = $u['username'];
+        $handle = '@' . $u['username'];
+        $profileId = (int)$u['profile_id'];
 
-    $profileId = null;
+        $sqlFollowers = "SELECT u.username, u.email FROM follows f JOIN users u ON f.user_id = u.user_id WHERE f.profile_id = $profileId ORDER BY u.username";
+        $resFollowers = $conn->query($sqlFollowers);
 
-    if ($resultUser && $resultUser->num_rows === 1) {
-        $row = $resultUser->fetch_assoc();
-        $userName = $row['username'];          // you can change this to a full name later
-        $userUsername = '@' . $row['username'];
-        $profileId = (int)$row['profile_id'];
-    }
-
-    // 2. If we found a profile, count how many followers it has
-    if ($profileId !== null) {
-        $sqlCount = "
-            SELECT COUNT(*) AS follower_count
-            FROM follows
-            WHERE profile_id = $profileId
-        ";
-        $resultCount = $conn->query($sqlCount);
-        if ($resultCount && $row = $resultCount->fetch_assoc()) {
-            $followersCount = (int)$row['follower_count'];
-        }
-
-        // 3. Get the list of followers (users who follow this profile)
-        $sqlFollowers = "
-            SELECT u.user_id, u.username, u.email
-            FROM follows f
-            JOIN users u ON f.user_id = u.user_id  -- follower user
-            WHERE f.profile_id = $profileId
-            ORDER BY u.username
-        ";
-        $resultFollowers = $conn->query($sqlFollowers);
-
-        if ($resultFollowers) {
-            while ($row = $resultFollowers->fetch_assoc()) {
+        if ($resFollowers) {
+            while ($row = $resFollowers->fetch_assoc()) {
                 $followers[] = $row;
             }
         }
+
+        $followersCount = count($followers);
     }
 }
 ?>
@@ -215,7 +182,7 @@ if (isset($conn) && !$conn->connect_error) {
     <div class="logo">The Owls Net</div>
     <nav>
         <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
+        <a href="feed.php">Feed</a>
         <a href="profile.html">Profile</a>
         <a href="login.html">Logout</a>
     </nav>
@@ -232,10 +199,10 @@ if (isset($conn) && !$conn->connect_error) {
     <!-- Summary of whose followers we are viewing -->
     <section class="user-summary">
         <div class="user-summary-name">
-            <?php echo htmlspecialchars($userName); ?>
+            <?php echo $name; ?>
         </div>
         <div class="user-summary-username">
-            <?php echo htmlspecialchars($userUsername); ?>
+            <?php echo $handle; ?>
         </div>
         <div style="margin-top:0.4rem; color:#cbd5e1; font-size:0.9rem;">
             You currently have <strong><?php echo $followersCount; ?></strong> follower(s).
@@ -248,7 +215,6 @@ if (isset($conn) && !$conn->connect_error) {
             <div class="followers-count">
                 <?php echo $followersCount; ?> follower(s)
             </div>
-            <div style="font-size:0.8rem; color:#9ca3af;">Loaded from database</div>
         </div>
 
         <?php if ($followersCount === 0): ?>
@@ -261,14 +227,14 @@ if (isset($conn) && !$conn->connect_error) {
                     <li class="follower-item">
                         <div class="follower-main">
                             <div class="follower-name">
-                                <?php echo htmlspecialchars($f['username']); ?>
+                                <?php echo $f['username']; ?>
                             </div>
                             <div class="follower-username">
-                                <?php echo '@' . htmlspecialchars($f['username']); ?>
+                                <?php echo '@' . $f['username']; ?>
                             </div>
                         </div>
                         <div class="follower-meta">
-                            <?php echo htmlspecialchars($f['email']); ?>
+                            <?php echo $f['email']; ?>
                         </div>
                     </li>
                 <?php endforeach; ?>

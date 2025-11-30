@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once 'DB.php';
 session_start();
 
@@ -22,14 +25,14 @@ if (!empty($conn) && !$conn->connect_error) {
             $postError = 'Post cannot be empty.';
         } else {
             $bodyEsc = $conn->real_escape_string($body);
-            $insertSql = "INSERT INTO posts (user_id, content, created_at) VALUES ($userId, '$bodyEsc', NOW())";
+            $insertSql = "INSERT INTO posts (author_id, body_txt, created_at) VALUES ($userId, '$bodyEsc', NOW())";
             $conn->query($insertSql);
             header('Location: feed.php');
             exit;
         }
     }
 
-    $sql = "SELECT p.post_id, p.content, p.created_at, u.username FROM posts p JOIN users u ON p.user_id = u.user_id ORDER BY p.created_at DESC";
+    $sql = "SELECT p.post_id, p.body_txt, p.created_at, u.username FROM posts p JOIN users u ON p.author_id = u.user_id ORDER BY p.created_at DESC";
     $res = $conn->query($sql);
 
     if ($res) {
@@ -273,7 +276,7 @@ if (!empty($conn) && !$conn->connect_error) {
                             <div class="post-time"><?php echo $p['created_at']; ?></div>
                         </div>
                         <p class="post-body">
-                            <?php echo $p['content']; ?>
+                            <?php echo $p['body_txt']; ?></p>
                         <div class="post-footer">
                             <button type="button">Like</button>
                             <button type="button">Comments</button>
