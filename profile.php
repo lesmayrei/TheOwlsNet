@@ -13,6 +13,7 @@ $followingCount = 0;
 $totalPosts = 0;
 $recentPosts = [];
 $about = '';
+$picture = '';
 
 if ($userId > 0 && isset($conn) && !$conn->connect_error) {
     $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $userId LIMIT 1";
@@ -26,7 +27,7 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         $joinedAt = $u['created_at'];
     }
 
-    $sqlProfile = "SELECT profile_id, profile_status FROM profiles WHERE user_id = $userId LIMIT 1";
+    $sqlProfile = "SELECT profile_id, profile_status, picture FROM profiles WHERE user_id = $userId LIMIT 1";
     $resProfile = $conn->query($sqlProfile);
 
     if ($resProfile && $resProfile->num_rows === 1) {
@@ -34,6 +35,9 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         $profileId = (int)$p['profile_id'];
         if (isset($p['profile_status'])) {
             $about = $p['profile_status'];
+        }
+        if (isset($p['picture'])) {
+            $picture = $p['picture'];
         }
 
         $sqlFollowersCount = "SELECT COUNT(*) AS c FROM follows WHERE profile_id = $profileId";
@@ -122,6 +126,14 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
 
         .profile-main {
             flex: 2;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 999px;
+            object-fit: cover;
+            border: 2px solid #38bdf8;
+            margin-bottom: 0.75rem;
         }
 
         .profile-name {
@@ -243,6 +255,9 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
     <!-- Top section: basic profile info + stats -->
     <section class="profile-header">
         <div class="profile-main">
+            <?php if ($picture): ?>
+                <img src="<?php echo $picture; ?>" alt="Profile picture" class="profile-avatar">
+            <?php endif; ?>
             <h1 class="profile-name"><?php echo $name; ?></h1>
             <div class="profile-username"><?php echo $handle; ?></div>
             <div class="profile-email"><?php echo $email; ?></div>
