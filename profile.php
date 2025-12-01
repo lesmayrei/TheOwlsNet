@@ -272,19 +272,39 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             margin: 0;
         }
 
-        .post-item {
-            border-top: 1px solid #1f2937;
-            padding: 0.9rem 0;
+        .post-card {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
         }
 
-        .post-meta {
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.4rem;
+        }
+
+        .post-author {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .post-username {
             font-size: 0.8rem;
             color: #9ca3af;
-            margin-bottom: 0.25rem;
+        }
+
+        .post-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
         }
 
         .post-body {
             font-size: 0.95rem;
+            margin: 0.35rem 0 0 0;
         }
 
         footer {
@@ -380,11 +400,17 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             <?php else: ?>
             <ul class="posts-list">
                 <?php foreach ($recentPosts as $post): ?>
-                    <li class="post-item">
-                        <div class="post-meta"><?php echo $post['created_at']; ?></div>
-                        <div class="post-body">
-                            <?php echo $post['body_txt']; ?>
+                    <li class="post-card">
+                        <div class="post-header">
+                            <div>
+                                <div class="post-author"><?php echo htmlspecialchars($name); ?></div>
+                                <div class="post-username"><?php echo htmlspecialchars($handle); ?></div>
+                            </div>
+                            <div class="post-time"><?php echo $post['created_at']; ?></div>
                         </div>
+                        <p class="post-body">
+                            <?php echo $post['body_txt']; ?>
+                        </p>
                     </li>
                 <?php endforeach; ?>
             </ul>
