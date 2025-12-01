@@ -32,7 +32,15 @@ if (!empty($conn) && !$conn->connect_error) {
         }
     }
 
-    $sql = "SELECT p.post_id, p.body_txt, p.created_at, u.username FROM posts p JOIN users u ON p.author_id = u.user_id ORDER BY p.created_at DESC";
+    $sql = "
+        SELECT p.post_id, p.body_txt, p.created_at, u.username
+        FROM posts p
+        JOIN users u ON p.author_id = u.user_id
+        LEFT JOIN profiles pr ON pr.user_id = u.user_id
+        LEFT JOIN follows f ON f.profile_id = pr.profile_id
+        WHERE (f.user_id = $userId) OR (p.author_id = $userId)
+        ORDER BY p.created_at DESC
+    ";
     $res = $conn->query($sql);
 
     if ($res) {
