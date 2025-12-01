@@ -243,9 +243,6 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
             <div class="profile-username"><?php echo $handle; ?></div>
             <div class="profile-email"><?php echo $email; ?></div>
 
-            <div class="profile-actions">
-                <a href="#" class="btn">Edit profile</a>
-            </div>
         </div>
 
         <aside class="stats-card">
