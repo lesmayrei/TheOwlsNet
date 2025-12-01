@@ -118,10 +118,8 @@ session_start();
             <?php else: ?>
                 <a href="login.php">Login</a>
                 <a href="register.php">Register</a>
+                <a href="reactivate.php">Reactivate</a>
             <?php endif; ?>
-
-            <!-- Reactivate link always visible -->
-            <a href="reactivate.php">Reactivate</a>
         </nav>
     </header>
 
