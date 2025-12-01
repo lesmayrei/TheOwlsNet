@@ -64,6 +64,52 @@ if (
     exit();
 }
 
+// handle like / comment actions on this profile's posts
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['form_type']) &&
+    $userId > 0 &&
+    isset($conn) && !$conn->connect_error
+) {
+    $formType = $_POST['form_type'];
+
+    if ($formType === 'like' && isset($_POST['post_id'], $_POST['like_action'])) {
+        $postId = (int)$_POST['post_id'];
+        $action = $_POST['like_action'];
+
+        if ($action === 'like') {
+            $conn->query("
+                INSERT IGNORE INTO likes (user_id, post_id, created_at)
+                VALUES ($userId, $postId, NOW())
+            ");
+        } elseif ($action === 'unlike') {
+            $conn->query("
+                DELETE FROM likes
+                WHERE user_id = $userId AND post_id = $postId
+            ");
+        }
+
+        header("Location: profile.php?user_id=" . $viewedUserId);
+        exit();
+    }
+
+    if ($formType === 'comment' && isset($_POST['post_id'])) {
+        $postId = (int)$_POST['post_id'];
+        $commentBody = trim($_POST['comment_body'] ?? '');
+
+        if ($commentBody !== '') {
+            $commentBodyEsc = $conn->real_escape_string($commentBody);
+            $conn->query("
+                INSERT INTO comments (user_id, post_id, body_txt, created_at)
+                VALUES ($userId, $postId, '$commentBodyEsc', NOW())
+            ");
+        }
+
+        header("Location: profile.php?user_id=" . $viewedUserId);
+        exit();
+    }
+}
+
 if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
     $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $viewedUserId LIMIT 1";
     $resUser = $conn->query($sqlUser);
@@ -121,7 +167,7 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
         $totalPosts = (int)$rowP['c'];
     }
 
-    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
+    $sqlRecent = "SELECT post_id, body_txt, created_at FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
     $resRecent = $conn->query($sqlRecent);
     if ($resRecent) {
         while ($row = $resRecent->fetch_assoc()) {
@@ -307,6 +353,29 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             margin: 0.35rem 0 0 0;
         }
 
+        .post-footer {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .post-footer button {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.85rem;
+        }
+
+        .post-footer button:hover {
+            color: #e5e7eb;
+            text-decoration: underline;
+        }
+
         footer {
             margin-top: 3rem;
             padding: 1.5rem 2rem;
@@ -400,6 +469,47 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             <?php else: ?>
             <ul class="posts-list">
                 <?php foreach ($recentPosts as $post): ?>
+                    <?php
+                        $postId = (int)$post['post_id'];
+
+                        // likes for this post
+                        $likesCount = 0;
+                        $userLiked = false;
+
+                        if (isset($conn) && !$conn->connect_error) {
+                            $resLikesCount = $conn->query("SELECT COUNT(*) AS c FROM likes WHERE post_id = $postId");
+                            if ($resLikesCount) {
+                                $rowLc = $resLikesCount->fetch_assoc();
+                                $likesCount = (int)$rowLc['c'];
+                            }
+
+                            $resUserLiked = $conn->query("
+                                SELECT 1 FROM likes
+                                WHERE user_id = $userId AND post_id = $postId
+                                LIMIT 1
+                            ");
+                            if ($resUserLiked && $resUserLiked->num_rows === 1) {
+                                $userLiked = true;
+                            }
+                        }
+
+                        // comments for this post
+                        $comments = [];
+                        if (isset($conn) && !$conn->connect_error) {
+                            $resComments = $conn->query("
+                                SELECT c.body_txt, c.created_at, u.username
+                                FROM comments c
+                                JOIN users u ON c.user_id = u.user_id
+                                WHERE c.post_id = $postId
+                                ORDER BY c.created_at ASC
+                            ");
+                            if ($resComments) {
+                                while ($cRow = $resComments->fetch_assoc()) {
+                                    $comments[] = $cRow;
+                                }
+                            }
+                        }
+                    ?>
                     <li class="post-card">
                         <div class="post-header">
                             <div>
@@ -411,6 +521,54 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
                         <p class="post-body">
                             <?php echo $post['body_txt']; ?>
                         </p>
+
+                        <div class="post-footer">
+                            <form action="profile.php?user_id=<?php echo $viewedUserId; ?>" method="POST" style="display:inline;">
+                                <input type="hidden" name="form_type" value="like">
+                                <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
+                                <input type="hidden" name="like_action" value="<?php echo $userLiked ? 'unlike' : 'like'; ?>">
+                                <button type="submit">
+                                    <?php echo $userLiked ? 'Unlike' : 'Like'; ?>
+                                </button>
+                            </form>
+                            <span>
+                                <?php echo $likesCount; ?> like<?php echo $likesCount === 1 ? '' : 's'; ?>
+                            </span>
+                        </div>
+
+                        <div style="margin-top:0.5rem; padding-left:0.5rem; border-left:1px solid #1f2937;">
+                            <?php if (empty($comments)): ?>
+                                <p style="font-size:0.8rem; color:#6b7280; margin:0 0 0.3rem 0;">
+                                    No comments yet.
+                                </p>
+                            <?php else: ?>
+                                <?php foreach ($comments as $c): ?>
+                                    <div style="margin-bottom:0.35rem;">
+                                        <span style="font-size:0.8rem; color:#9ca3af;">
+                                            <strong>@<?php echo htmlspecialchars($c['username']); ?></strong>
+                                            · <?php echo $c['created_at']; ?>
+                                        </span>
+                                        <div style="font-size:0.9rem;">
+                                            <?php echo htmlspecialchars($c['body_txt']); ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            <form action="profile.php?user_id=<?php echo $viewedUserId; ?>" method="POST" style="margin-top:0.3rem; display:flex; gap:0.4rem;">
+                                <input type="hidden" name="form_type" value="comment">
+                                <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
+                                <input
+                                    type="text"
+                                    name="comment_body"
+                                    placeholder="Add a comment..."
+                                    style="flex:1; padding:0.3rem; border-radius:6px; border:1px solid #475569; background:#020617; color:#f9fafb;"
+                                >
+                                <button type="submit" class="btn" style="border:none; background:#38bdf8; color:#020617; padding:0.3rem 0.7rem; font-size:0.8rem;">
+                                    Post
+                                </button>
+                            </form>
+                        </div>
                     </li>
                 <?php endforeach; ?>
             </ul>
