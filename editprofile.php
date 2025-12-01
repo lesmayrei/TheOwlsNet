@@ -14,26 +14,23 @@ if (!isset($_SESSION['user_id'])) {
 $userId = (int)$_SESSION['user_id'];
 
 $currentPicture = '';
-$currentBio = '';
 $msg = '';
 
 // load current profile info
 if (isset($conn) && !$conn->connect_error) {
-    $stmt = $conn->prepare('SELECT picture, profile_status FROM profiles WHERE user_id = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT picture FROM profiles WHERE user_id = ? LIMIT 1');
     if ($stmt) {
         $stmt->bind_param('i', $userId);
         $stmt->execute();
-        $stmt->bind_result($pic, $status);
+        $stmt->bind_result($pic);
         if ($stmt->fetch()) {
             $currentPicture = $pic ?: '';
-            $currentBio = $status ?: '';
         }
         $stmt->close();
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $bio = isset($_POST['bio']) ? trim($_POST['bio']) : '';
     $newPicture = $currentPicture;
 
     // handle file upload if a new file was selected
@@ -57,13 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($conn) && !$conn->connect_error) {
-        $stmt = $conn->prepare('UPDATE profiles SET picture = ?, profile_status = ? WHERE user_id = ?');
+        $stmt = $conn->prepare('UPDATE profiles SET picture = ? WHERE user_id = ?');
         if ($stmt) {
-            $stmt->bind_param('ssi', $newPicture, $bio, $userId);
+            $stmt->bind_param('si', $newPicture, $userId);
             if ($stmt->execute()) {
                 $msg = 'Profile updated.';
                 $currentPicture = $newPicture;
-                $currentBio = $bio;
             } else {
                 $msg = 'Could not save changes.';
             }
@@ -253,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <main>
     <h1>Edit profile</h1>
-    <p class="subtitle">Upload a profile picture and update your About section.</p>
+    <p class="subtitle">Upload or change your profile picture.</p>
 
     <section class="card">
         <form action="editprofile.php" method="POST" enctype="multipart/form-data">
@@ -269,9 +265,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <input type="file" name="profile_picture" accept="image/*">
-
-            <label for="bio">About</label>
-            <textarea id="bio" name="bio" placeholder="Write a short bio about yourself..."><?php echo htmlspecialchars($currentBio); ?></textarea>
 
             <div class="btn-row">
                 <a href="profile.php" class="btn-secondary-link">Cancel</a>
