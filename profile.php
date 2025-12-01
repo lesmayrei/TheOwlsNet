@@ -12,6 +12,7 @@ $followersCount = 0;
 $followingCount = 0;
 $totalPosts = 0;
 $recentPosts = [];
+$about = '';
 
 if ($userId > 0 && isset($conn) && !$conn->connect_error) {
     $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $userId LIMIT 1";
@@ -25,12 +26,15 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         $joinedAt = $u['created_at'];
     }
 
-    $sqlProfile = "SELECT profile_id FROM profiles WHERE user_id = $userId LIMIT 1";
+    $sqlProfile = "SELECT profile_id, profile_status FROM profiles WHERE user_id = $userId LIMIT 1";
     $resProfile = $conn->query($sqlProfile);
 
     if ($resProfile && $resProfile->num_rows === 1) {
         $p = $resProfile->fetch_assoc();
         $profileId = (int)$p['profile_id'];
+        if (isset($p['profile_status'])) {
+            $about = $p['profile_status'];
+        }
 
         $sqlFollowersCount = "SELECT COUNT(*) AS c FROM follows WHERE profile_id = $profileId";
         $resFollowersCount = $conn->query($sqlFollowersCount);
@@ -242,7 +246,9 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
             <h1 class="profile-name"><?php echo $name; ?></h1>
             <div class="profile-username"><?php echo $handle; ?></div>
             <div class="profile-email"><?php echo $email; ?></div>
-
+            <div class="profile-actions">
+                <a href="editprofile.php" class="btn">Edit profile</a>
+            </div>
         </div>
 
         <aside class="stats-card">
@@ -276,10 +282,15 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
     <!-- About section -->
     <section class="section">
         <h2>About</h2>
-        <p>
-            This is your space to share a short bio or what you&apos;re using The Owls Net for.
-            Later, this text will be pulled from your profile data in the database.
-        </p>
+        <?php if ($about === '' || $about === null): ?>
+            <p style="color:#9ca3af; font-size:0.9rem;">
+                Use the Edit profile page to add a short bio.
+            </p>
+        <?php else: ?>
+            <p style="font-size:0.95rem;">
+                <?php echo nl2br(htmlspecialchars($about)); ?>
+            </p>
+        <?php endif; ?>
     </section>
 
     <!-- Recent posts section -->
