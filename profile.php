@@ -12,7 +12,6 @@ $followersCount = 0;
 $followingCount = 0;
 $totalPosts = 0;
 $recentPosts = [];
-$about = '';
 $picture = '';
 
 if ($userId > 0 && isset($conn) && !$conn->connect_error) {
@@ -27,15 +26,12 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         $joinedAt = $u['created_at'];
     }
 
-    $sqlProfile = "SELECT profile_id, profile_status, picture FROM profiles WHERE user_id = $userId LIMIT 1";
+    $sqlProfile = "SELECT profile_id, picture FROM profiles WHERE user_id = $userId LIMIT 1";
     $resProfile = $conn->query($sqlProfile);
 
     if ($resProfile && $resProfile->num_rows === 1) {
         $p = $resProfile->fetch_assoc();
         $profileId = (int)$p['profile_id'];
-        if (isset($p['profile_status'])) {
-            $about = $p['profile_status'];
-        }
         if (isset($p['picture'])) {
             $picture = $p['picture'];
         }
@@ -292,20 +288,6 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
                 <span><?php echo $joinedAt !== '' ? $joinedAt : 'N/A'; ?></span>
             </div>
         </aside>
-    </section>
-
-    <!-- About section -->
-    <section class="section">
-        <h2>About</h2>
-        <?php if ($about === '' || $about === null): ?>
-            <p style="color:#9ca3af; font-size:0.9rem;">
-                Use the Edit profile page to add a short bio.
-            </p>
-        <?php else: ?>
-            <p style="font-size:0.95rem;">
-                <?php echo nl2br(htmlspecialchars($about)); ?>
-            </p>
-        <?php endif; ?>
     </section>
 
     <!-- Recent posts section -->
