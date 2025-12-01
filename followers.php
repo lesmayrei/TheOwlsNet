@@ -151,9 +151,7 @@ if (isset($conn) && !$conn->connect_error) {
 
 <main>
     <h1>Your followers</h1>
-    <p class="subtitle">
-        These accounts are currently following you.
-    </p>
+   
 
     <section class="card">
         <?php if (empty($followers)): ?>
