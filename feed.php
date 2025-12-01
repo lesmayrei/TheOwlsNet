@@ -42,6 +42,19 @@ if (!empty($conn) && !$conn->connect_error) {
     }
 
     $postsCount = count($posts);
+
+// --- USER SEARCH FEATURE ---
+$searchResults = [];
+if (isset($_GET['search_user']) && trim($_GET['search_user']) !== '' && !$conn->connect_error) {
+    $term = $conn->real_escape_string(trim($_GET['search_user']));
+    $sqlUsers = "SELECT user_id, username FROM users WHERE username LIKE '%$term%' ORDER BY username ASC";
+    $rsUsers = $conn->query($sqlUsers);
+    if ($rsUsers) {
+        while ($u = $rsUsers->fetch_assoc()) {
+            $searchResults[] = $u;
+        }
+    }
+}
 }
 ?>
 <!DOCTYPE html>
@@ -235,6 +248,36 @@ if (!empty($conn) && !$conn->connect_error) {
 </header>
 
 <main>
+    <section style="margin-bottom:1.5rem;">
+        <form action="feed.php" method="GET" style="display:flex; gap:0.5rem;">
+            <input
+                type="text"
+                name="search_user"
+                placeholder="Search users by username..."
+                value="<?php echo isset($_GET['search_user']) ? htmlspecialchars($_GET['search_user']) : ''; ?>"
+                style="flex:1; padding:0.5rem; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f9fafb;"
+            >
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <?php if (!empty($searchResults)): ?>
+            <div style="margin-top:1rem; background:#020617; padding:1rem; border-radius:8px; border:1px solid #1f2937;">
+                <h3 style="margin:0 0 0.5rem 0;">Search Results</h3>
+                <ul style="list-style:none; padding-left:0; margin:0;">
+                    <?php foreach ($searchResults as $u): ?>
+                        <li style="padding:0.3rem 0;">
+                            <a href="profile.php?user_id=<?php echo $u['user_id']; ?>" style="color:#38bdf8; text-decoration:none;">
+                                @<?php echo htmlspecialchars($u['username']); ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php elseif (isset($_GET['search_user'])): ?>
+            <p style="margin-top:1rem; font-size:0.9rem; color:#9ca3af;">No users found.</p>
+        <?php endif; ?>
+    </section>
+
     <h1 class="page-title">Campus Feed</h1>
     <p class="page-subtitle">
         See what other students are posting right now.
