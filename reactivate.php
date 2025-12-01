@@ -2,12 +2,6 @@
 session_start();
 require_once 'DB.php';
 
-// optional: require someone to be logged in to use this page
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
 $message = '';
 $error = '';
 
