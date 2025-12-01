@@ -3,12 +3,6 @@ session_start();
 require_once 'DB.php';
 
 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
-$viewedUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $userId;
-if ($viewedUserId <= 0) {
-    $viewedUserId = $userId;
-}
-
-$isFollowing = false;
 
 $name = 'Student Name';
 $handle = '@username';
@@ -20,44 +14,8 @@ $totalPosts = 0;
 $recentPosts = [];
 $picture = '';
 
-// Handle follow/unfollow POST
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    isset($_POST['follow_action']) &&
-    $userId > 0 &&
-    $viewedUserId > 0 &&
-    $userId !== $viewedUserId &&
-    isset($conn) && !$conn->connect_error
-) {
-    $profileIdTarget = null;
-    $sqlFindProfile = "SELECT profile_id FROM profiles WHERE user_id = $viewedUserId LIMIT 1";
-    $resFindProfile = $conn->query($sqlFindProfile);
-    if ($resFindProfile && $resFindProfile->num_rows === 1) {
-        $rowProf = $resFindProfile->fetch_assoc();
-        $profileIdTarget = (int)$rowProf['profile_id'];
-    }
-
-    if ($profileIdTarget !== null) {
-        if ($_POST['follow_action'] === 'follow') {
-            $stmt = $conn->prepare("INSERT INTO follows (user_id, profile_id) VALUES (?, ?)");
-            if ($stmt) {
-                $stmt->bind_param("ii", $userId, $profileIdTarget);
-                $stmt->execute();
-                $stmt->close();
-            }
-        } elseif ($_POST['follow_action'] === 'unfollow') {
-            $stmt = $conn->prepare("DELETE FROM follows WHERE user_id = ? AND profile_id = ?");
-            if ($stmt) {
-                $stmt->bind_param("ii", $userId, $profileIdTarget);
-                $stmt->execute();
-                $stmt->close();
-            }
-        }
-    }
-}
-
-if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
-    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $viewedUserId LIMIT 1";
+if ($userId > 0 && isset($conn) && !$conn->connect_error) {
+    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $userId LIMIT 1";
     $resUser = $conn->query($sqlUser);
 
     if ($resUser && $resUser->num_rows === 1) {
@@ -68,7 +26,7 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
         $joinedAt = $u['created_at'];
     }
 
-    $sqlProfile = "SELECT profile_id, picture FROM profiles WHERE user_id = $viewedUserId LIMIT 1";
+    $sqlProfile = "SELECT profile_id, picture FROM profiles WHERE user_id = $userId LIMIT 1";
     $resProfile = $conn->query($sqlProfile);
 
     if ($resProfile && $resProfile->num_rows === 1) {
@@ -78,39 +36,29 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             $picture = $p['picture'];
         }
 
-        // Followers count for this profile
         $sqlFollowersCount = "SELECT COUNT(*) AS c FROM follows WHERE profile_id = $profileId";
         $resFollowersCount = $conn->query($sqlFollowersCount);
         if ($resFollowersCount) {
             $rowF = $resFollowersCount->fetch_assoc();
             $followersCount = (int)$rowF['c'];
         }
-
-        // Is the logged-in user already following this profile?
-        if ($userId > 0 && $userId !== $viewedUserId) {
-            $sqlIsFollowing = "SELECT 1 FROM follows WHERE user_id = $userId AND profile_id = $profileId LIMIT 1";
-            $resIsFollowing = $conn->query($sqlIsFollowing);
-            if ($resIsFollowing && $resIsFollowing->num_rows === 1) {
-                $isFollowing = true;
-            }
-        }
     }
 
-    $sqlFollowingCount = "SELECT COUNT(*) AS c FROM follows WHERE user_id = $viewedUserId";
+    $sqlFollowingCount = "SELECT COUNT(*) AS c FROM follows WHERE user_id = $userId";
     $resFollowingCount = $conn->query($sqlFollowingCount);
     if ($resFollowingCount) {
         $rowFo = $resFollowingCount->fetch_assoc();
         $followingCount = (int)$rowFo['c'];
     }
 
-    $sqlPostsCount = "SELECT COUNT(*) AS c FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL)";
+    $sqlPostsCount = "SELECT COUNT(*) AS c FROM posts WHERE author_id = $userId AND (deleted_at IS NULL)";
     $resPostsCount = $conn->query($sqlPostsCount);
     if ($resPostsCount) {
         $rowP = $resPostsCount->fetch_assoc();
         $totalPosts = (int)$rowP['c'];
     }
 
-    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
+    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $userId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
     $resRecent = $conn->query($sqlRecent);
     if ($resRecent) {
         while ($row = $resRecent->fetch_assoc()) {
@@ -310,16 +258,7 @@ if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
             <div class="profile-username"><?php echo $handle; ?></div>
             <div class="profile-email"><?php echo $email; ?></div>
             <div class="profile-actions">
-                <?php if ($userId === $viewedUserId): ?>
-                    <a href="editprofile.php" class="btn">Edit profile</a>
-                <?php elseif ($userId > 0): ?>
-                    <form action="profile.php?user_id=<?php echo $viewedUserId; ?>" method="POST" style="display:inline;">
-                        <input type="hidden" name="follow_action" value="<?php echo $isFollowing ? 'unfollow' : 'follow'; ?>">
-                        <button type="submit" class="btn">
-                            <?php echo $isFollowing ? 'Unfollow' : 'Follow'; ?>
-                        </button>
-                    </form>
-                <?php endif; ?>
+                <a href="editprofile.php" class="btn">Edit profile</a>
             </div>
         </div>
 
