@@ -1,33 +1,43 @@
-```php
 <?php
+session_start();
 require_once 'DB.php';
 
-$userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 1;
-$displayName = 'User';
-$atName = '@user';
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$userId = (int)$_SESSION['user_id'];
 $following = [];
-$followingCount = 0;
 
-if (!empty($conn) && !$conn->connect_error) {
-    $userSql = "SELECT u.username, p.profile_id FROM users u JOIN profiles p ON u.user_id = p.user_id WHERE u.user_id = $userId LIMIT 1";
-    $userRes = $conn->query($userSql);
+if (isset($conn) && !$conn->connect_error) {
 
-    if ($userRes && $userRes->num_rows > 0) {
-        $u = $userRes->fetch_assoc();
-        $displayName = $u['username'];
-        $atName = '@' . $u['username'];
-        $profileId = (int)$u['profile_id'];
+    $resProfile = $conn->query("SELECT profile_id FROM profiles WHERE user_id = $userId LIMIT 1");
+    $profileId = null;
 
-        $followSql = "SELECT u.username, u.email FROM follows f JOIN profiles p ON f.profile_id = p.profile_id JOIN users u ON p.user_id = u.user_id WHERE f.user_id = $userId ORDER BY u.username";
-        $followRes = $conn->query($followSql);
+    if ($resProfile && $resProfile->num_rows === 1) {
+        $rowP = $resProfile->fetch_assoc();
+        $profileId = (int)$rowP['profile_id'];
+    }
 
-        if ($followRes) {
-            while ($row = $followRes->fetch_assoc()) {
+    if ($profileId !== null) {
+        // Find who THIS user is following
+        $sqlFollowing = "
+            SELECT u.user_id, u.username, u.email, f.created_at
+            FROM follows f
+            JOIN profiles p ON f.profile_id = p.profile_id
+            JOIN users u ON p.user_id = u.user_id
+            WHERE f.user_id = $userId
+            ORDER BY f.created_at DESC
+        ";
+
+        $resFollowing = $conn->query($sqlFollowing);
+
+        if ($resFollowing) {
+            while ($row = $resFollowing->fetch_assoc()) {
                 $following[] = $row;
             }
         }
-
-        $followingCount = count($following);
     }
 }
 ?>
@@ -35,16 +45,15 @@ if (!empty($conn) && !$conn->connect_error) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Following</title>
+    <title>Your following – The Owls Net</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
             background: #0f172a;
             color: #f9fafb;
-            font-family: system-ui, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
         }
-
         header {
             background: #020617;
             padding: 1rem 2rem;
@@ -53,113 +62,77 @@ if (!empty($conn) && !$conn->connect_error) {
             align-items: center;
             border-bottom: 1px solid #1f2937;
         }
-
         .logo {
             font-weight: 700;
             letter-spacing: 0.05em;
         }
-
         nav a {
             color: #e5e7eb;
             margin-left: 1rem;
             text-decoration: none;
             font-size: 0.95rem;
         }
-
         nav a:hover {
             text-decoration: underline;
         }
-
         main {
-            max-width: 720px;
+            max-width: 800px;
             margin: 2rem auto 3rem auto;
             padding: 0 1.5rem;
         }
-
-        .page-title {
-            font-size: 1.6rem;
+        h1 {
+            font-size: 1.7rem;
             margin-bottom: 0.5rem;
         }
-
-        .page-subtitle {
-            font-size: 0.95rem;
+        p.subtitle {
             color: #9ca3af;
+            font-size: 0.95rem;
             margin-bottom: 1.5rem;
         }
-
-        .user-summary {
+        .card {
             background: #020617;
             border-radius: 12px;
             border: 1px solid #1f2937;
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.95rem;
+            padding: 1.25rem 1.5rem;
         }
-
-        .user-summary-name {
-            font-weight: 600;
-        }
-
-        .user-summary-username {
-            font-size: 0.85rem;
-            color: #9ca3af;
-        }
-
-        .following-card {
-            background: #020617;
-            border-radius: 12px;
-            border: 1px solid #1f2937;
-            padding: 1rem 1.25rem;
-        }
-
-        .following-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .following-count {
-            font-weight: 600;
-        }
-
-        .following-list {
+        ul.follow-list {
             list-style: none;
             padding-left: 0;
             margin: 0;
         }
-
-        .following-item {
-            padding: 0.6rem 0;
-            border-top: 1px solid #111827;
+        li.follow-item {
             display: flex;
+            justify-content: space-between;
             align-items: baseline;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #1f2937;
         }
-
-        .following-main {
+        li.follow-item:last-child {
+            border-bottom: none;
+        }
+        .follow-main {
             display: flex;
             flex-direction: column;
         }
-
-        .following-name {
-            font-size: 0.95rem;
-        }
-
-        .following-username {
-            font-size: 0.8rem;
-            color: #9ca3af;
-        }
-
-        .back-link {
-            font-size: 0.9rem;
+        .follow-username a {
             color: #38bdf8;
             text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
         }
-
-        .back-link:hover {
+        .follow-username a:hover {
             text-decoration: underline;
         }
-
+        .follow-email {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+        .follow-time {
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-left: 1rem;
+            white-space: nowrap;
+        }
         footer {
             margin-top: 3rem;
             padding: 1.5rem 2rem;
@@ -175,51 +148,40 @@ if (!empty($conn) && !$conn->connect_error) {
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <a href="index.html">Home</a>
-        <a href="feed.html">Feed</a>
-        <a href="profile.html">Profile</a>
-        <a href="login.html">Logout</a>
+        <a href="index.php">Home</a>
+        <a href="feed.php">Feed</a>
+        <a href="profile.php">Profile</a>
+        <a href="logout.php">Logout</a>
     </nav>
 </header>
 
 <main>
-    <a class="back-link" href="profile.html">← Back to profile</a>
+    <h1>You're following</h1>
 
-    <h1 class="page-title">People you follow</h1>
-    <p class="page-subtitle">Accounts you are following.</p>
 
-    <section class="user-summary">
-        <div class="user-summary-name">
-            <?php echo $displayName; ?>
-        </div>
-        <div class="user-summary-username">
-            <?php echo $atName; ?>
-        </div>
-        <div style="margin-top:0.4rem; color:#cbd5e1; font-size:0.9rem;">
-            You are following <strong><?php echo $followingCount; ?></strong> account(s).
-        </div>
-    </section>
-
-    <section class="following-card">
-        <div class="following-header">
-            <div class="following-count">
-                Following (<?php echo $followingCount; ?>)
-            </div>
-        </div>
-
-        <?php if ($followingCount <= 0): ?>
-            <p style="font-size:0.9rem; color:#9ca3af;">
-                Following 0 pages.
+    <section class="card">
+        <?php if (empty($following)): ?>
+            <p style="color:#9ca3af; font-size:0.95rem;">
+                You are not following anyone yet.
             </p>
         <?php else: ?>
-            <ul class="following-list">
-                <?php foreach ($following as $p): ?>
-                <li class="following-item">
-                    <div class="following-main">
-                        <div class="following-name"><?php echo $p['username']; ?></div>
-                        <div class="following-username"><?php echo '@' . $p['username']; ?></div>
-                    </div>
-                </li>
+            <ul class="follow-list">
+                <?php foreach ($following as $f): ?>
+                    <li class="follow-item">
+                        <div class="follow-main">
+                            <div class="follow-username">
+                                <a href="profile.php?user_id=<?php echo (int)$f['user_id']; ?>">
+                                    @<?php echo htmlspecialchars($f['username']); ?>
+                                </a>
+                            </div>
+                            <div class="follow-email">
+                                <?php echo htmlspecialchars($f['email']); ?>
+                            </div>
+                        </div>
+                        <div class="follow-time">
+                            <?php echo $f['created_at']; ?>
+                        </div>
+                    </li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
@@ -227,9 +189,7 @@ if (!empty($conn) && !$conn->connect_error) {
 </main>
 
 <footer>
-    The Owls Net · CSC 335 ·
+    The Owls Net · CSC 335
 </footer>
-
 </body>
 </html>
-```

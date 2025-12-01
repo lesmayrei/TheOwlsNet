@@ -1,8 +1,11 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once 'DB.php';
 session_start();
 
-$userId = 1;
+$userId = 0;
 if (isset($_SESSION['user_id'])) {
     $userId = (int)$_SESSION['user_id'];
 }
@@ -10,35 +13,118 @@ if (isset($_SESSION['user_id'])) {
 $postError = '';
 $posts = [];
 $postsCount = 0;
+$searchResults = [];
 
 if (!empty($conn) && !$conn->connect_error) {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $body = '';
-        if (isset($_POST['post_body'])) {
-            $body = trim($_POST['post_body']);
+
+    /* -------------------------
+       HANDLE POST REQUESTS
+    -------------------------- */
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
+
+        $formType = $_POST['form_type'] ?? 'new_post';
+
+        // create a new post
+        if ($formType === 'new_post') {
+            $body = trim($_POST['post_body'] ?? '');
+
+            if ($body === '') {
+                $postError = 'Post cannot be empty.';
+            } else {
+                $bodyEsc = $conn->real_escape_string($body);
+                $sqlInsert = "
+                    INSERT INTO posts (author_id, body_txt, created_at)
+                    VALUES ($userId, '$bodyEsc', NOW())
+                ";
+                $conn->query($sqlInsert);
+                header("Location: feed.php");
+                exit();
+            }
         }
 
-        if ($body === '') {
-            $postError = 'Post cannot be empty.';
-        } else {
-            $bodyEsc = $conn->real_escape_string($body);
-            $insertSql = "INSERT INTO posts (user_id, content, created_at) VALUES ($userId, '$bodyEsc', NOW())";
-            $conn->query($insertSql);
-            header('Location: feed.php');
-            exit;
+        // like / unlike a post
+        if ($formType === 'like' && isset($_POST['post_id'], $_POST['like_action'])) {
+            $postId = (int)$_POST['post_id'];
+            $action = $_POST['like_action'];
+
+            if ($action === 'like') {
+                $conn->query("
+                    INSERT IGNORE INTO likes (user_id, post_id, created_at)
+                    VALUES ($userId, $postId, NOW())
+                ");
+            } elseif ($action === 'unlike') {
+                $conn->query("
+                    DELETE FROM likes
+                    WHERE user_id = $userId AND post_id = $postId
+                ");
+            }
+
+            header("Location: feed.php");
+            exit();
+        }
+
+        // add a comment
+        if ($formType === 'comment' && isset($_POST['post_id'])) {
+            $postId = (int)$_POST['post_id'];
+            $commentBody = trim($_POST['comment_body'] ?? '');
+
+            if ($commentBody !== '') {
+                $commentBodyEsc = $conn->real_escape_string($commentBody);
+                $conn->query("
+                    INSERT INTO comments (user_id, post_id, body_txt, created_at)
+                    VALUES ($userId, $postId, '$commentBodyEsc', NOW())
+                ");
+            }
+
+            header("Location: feed.php");
+            exit();
         }
     }
 
-    $sql = "SELECT p.post_id, p.content, p.created_at, u.username FROM posts p JOIN users u ON p.user_id = u.user_id ORDER BY p.created_at DESC";
+    /* -------------------------
+       LOAD FEED POSTS
+       (only people I follow + myself)
+    -------------------------- */
+    $sql = "
+        SELECT 
+            p.post_id,
+            p.author_id,
+            p.body_txt,
+            p.created_at,
+            u.username
+        FROM posts p
+        JOIN users u ON p.author_id = u.user_id
+        LEFT JOIN profiles pr ON pr.user_id = u.user_id
+        LEFT JOIN follows f ON f.profile_id = pr.profile_id
+        WHERE (f.user_id = $userId) OR (p.author_id = $userId)
+        ORDER BY p.created_at DESC
+    ";
     $res = $conn->query($sql);
-
     if ($res) {
         while ($r = $res->fetch_assoc()) {
             $posts[] = $r;
         }
     }
-
     $postsCount = count($posts);
+
+    /* -------------------------
+       USER SEARCH BY USERNAME
+    -------------------------- */
+    if (isset($_GET['search_user']) && trim($_GET['search_user']) !== '') {
+        $term = $conn->real_escape_string(trim($_GET['search_user']));
+        $sqlUsers = "
+            SELECT user_id, username
+            FROM users
+            WHERE username LIKE '%$term%'
+            ORDER BY username ASC
+        ";
+        $rsUsers = $conn->query($sqlUsers);
+        if ($rsUsers) {
+            while ($u = $rsUsers->fetch_assoc()) {
+                $searchResults[] = $u;
+            }
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -193,6 +279,7 @@ if (!empty($conn) && !$conn->connect_error) {
             color: #9ca3af;
             display: flex;
             gap: 1rem;
+            align-items: center;
         }
 
         .post-footer button {
@@ -224,21 +311,54 @@ if (!empty($conn) && !$conn->connect_error) {
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <a href="index.html">Home</a>
+        <a href="index.php">Home</a>
         <a href="feed.php">Feed</a>
-        <a href="profile.html">Profile</a>
-        <a href="login.html">Logout</a>
+        <a href="profile.php">Profile</a>
+        <a href="logout.php">Logout</a>
     </nav>
 </header>
 
 <main>
+    <!-- USER SEARCH BAR -->
+    <section style="margin-bottom:1.5rem;">
+        <form action="feed.php" method="GET" style="display:flex; gap:0.5rem;">
+            <input
+                type="text"
+                name="search_user"
+                placeholder="Search users by username..."
+                value="<?php echo isset($_GET['search_user']) ? htmlspecialchars($_GET['search_user']) : ''; ?>"
+                style="flex:1; padding:0.5rem; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f9fafb;"
+            >
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <?php if (!empty($searchResults)): ?>
+            <div style="margin-top:1rem; background:#020617; padding:1rem; border-radius:8px; border:1px solid #1f2937;">
+                <h3 style="margin:0 0 0.5rem 0;">Search Results</h3>
+                <ul style="list-style:none; padding-left:0; margin:0;">
+                    <?php foreach ($searchResults as $u): ?>
+                        <li style="padding:0.3rem 0;">
+                            <a href="profile.php?user_id=<?php echo $u['user_id']; ?>" style="color:#38bdf8; text-decoration:none;">
+                                @<?php echo htmlspecialchars($u['username']); ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php elseif (isset($_GET['search_user'])): ?>
+            <p style="margin-top:1rem; font-size:0.9rem; color:#9ca3af;">No users found.</p>
+        <?php endif; ?>
+    </section>
+
     <h1 class="page-title">Campus Feed</h1>
     <p class="page-subtitle">
         See what other students are posting right now.
     </p>
 
+    <!-- NEW POST -->
     <section class="new-post-card">
         <form action="feed.php" method="POST">
+            <input type="hidden" name="form_type" value="new_post">
             <label for="post_body" style="font-size:0.9rem; color:#cbd5e1; display:block; margin-bottom:0.3rem;">
                 Share something with your campus:
             </label>
@@ -256,6 +376,7 @@ if (!empty($conn) && !$conn->connect_error) {
         </form>
     </section>
 
+    <!-- FEED POSTS -->
     <section>
         <?php if ($postsCount === 0): ?>
             <p style="font-size:0.9rem; color:#9ca3af;">
@@ -264,19 +385,115 @@ if (!empty($conn) && !$conn->connect_error) {
         <?php else: ?>
             <ul class="posts-list">
                 <?php foreach ($posts as $p): ?>
+                    <?php
+                        $postId   = (int)$p['post_id'];
+                        $authorId = (int)$p['author_id'];
+
+                        // likes
+                        $likesCount = 0;
+                        $userLiked = false;
+
+                        if (!empty($conn) && !$conn->connect_error) {
+                            $resLikesCount = $conn->query("SELECT COUNT(*) AS c FROM likes WHERE post_id = $postId");
+                            if ($resLikesCount) {
+                                $rowLc = $resLikesCount->fetch_assoc();
+                                $likesCount = (int)$rowLc['c'];
+                            }
+
+                            $resUserLiked = $conn->query("
+                                SELECT 1 FROM likes
+                                WHERE user_id = $userId AND post_id = $postId
+                                LIMIT 1
+                            ");
+                            if ($resUserLiked && $resUserLiked->num_rows === 1) {
+                                $userLiked = true;
+                            }
+                        }
+
+                        // comments
+                        $comments = [];
+                        if (!empty($conn) && !$conn->connect_error) {
+                            $resComments = $conn->query("
+                                SELECT c.body_txt, c.created_at, u.username
+                                FROM comments c
+                                JOIN users u ON c.user_id = u.user_id
+                                WHERE c.post_id = $postId
+                                ORDER BY c.created_at ASC
+                            ");
+                            if ($resComments) {
+                                while ($cRow = $resComments->fetch_assoc()) {
+                                    $comments[] = $cRow;
+                                }
+                            }
+                        }
+                    ?>
                     <li class="post-card">
                         <div class="post-header">
                             <div>
-                                <div class="post-author"><?php echo $p['username']; ?></div>
-                                <div class="post-username"><?php echo '@' . $p['username']; ?></div>
+                                <div class="post-author">
+                                    <a href="profile.php?user_id=<?php echo $authorId; ?>" style="color:#f9fafb; text-decoration:none;">
+                                        <?php echo htmlspecialchars($p['username']); ?>
+                                    </a>
+                                </div>
+                                <div class="post-username">
+                                    <a href="profile.php?user_id=<?php echo $authorId; ?>" style="color:#38bdf8; text-decoration:none;">
+                                        @<?php echo htmlspecialchars($p['username']); ?>
+                                    </a>
+                                </div>
                             </div>
                             <div class="post-time"><?php echo $p['created_at']; ?></div>
                         </div>
+
                         <p class="post-body">
-                            <?php echo $p['content']; ?>
+                            <?php echo $p['body_txt']; ?>
+                        </p>
+
                         <div class="post-footer">
-                            <button type="button">Like</button>
-                            <button type="button">Comments</button>
+                            <form action="feed.php" method="POST" style="display:inline;">
+                                <input type="hidden" name="form_type" value="like">
+                                <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
+                                <input type="hidden" name="like_action" value="<?php echo $userLiked ? 'unlike' : 'like'; ?>">
+                                <button type="submit">
+                                    <?php echo $userLiked ? 'Unlike' : 'Like'; ?>
+                                </button>
+                            </form>
+                            <span>
+                                <?php echo $likesCount; ?> like<?php echo $likesCount === 1 ? '' : 's'; ?>
+                            </span>
+                        </div>
+
+                        <div style="margin-top:0.5rem; padding-left:0.5rem; border-left:1px solid #1f2937;">
+                            <?php if (empty($comments)): ?>
+                                <p style="font-size:0.8rem; color:#6b7280; margin:0 0 0.3rem 0;">
+                                    No comments yet.
+                                </p>
+                            <?php else: ?>
+                                <?php foreach ($comments as $c): ?>
+                                    <div style="margin-bottom:0.35rem;">
+                                        <span style="font-size:0.8rem; color:#9ca3af;">
+                                            <strong>@<?php echo htmlspecialchars($c['username']); ?></strong>
+                                            · <?php echo $c['created_at']; ?>
+                                        </span>
+                                        <div style="font-size:0.9rem;">
+                                            <?php echo htmlspecialchars($c['body_txt']); ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            <form action="feed.php" method="POST" style="margin-top:0.3rem; display:flex; gap:0.4rem;">
+                                <input type="hidden" name="form_type" value="comment">
+                                <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
+                                <input
+                                    type="text"
+                                    name="comment_body"
+                                    placeholder="Add a comment..."
+                                    style="flex:1; padding:0.3rem; border-radius:6px; border:1px solid #475569; background:#020617; color:#f9fafb;"
+                                >
+                                <button type="submit" class="btn-primary" style="border-radius:6px; border:none; padding:0.3rem 0.7rem; font-size:0.8rem;">
+                                    Post
+                                </button>
+                            </form>
                         </div>
                     </li>
                 <?php endforeach; ?>
