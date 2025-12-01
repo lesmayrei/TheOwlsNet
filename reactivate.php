@@ -83,6 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($conn) && !$conn->connect_err
             letter-spacing: 0.05em;
         }
 
+        nav {
+            /* No additional styles needed */
+        }
+
         nav a {
             color: #e5e7eb;
             margin-left: 1rem;
@@ -182,11 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($conn) && !$conn->connect_err
 <header>
     <div class="logo">The Owls Net</div>
     <nav>
-        <a href="index.php">Home</a>
-        <a href="feed.php">Feed</a>
-        <a href="profile.php">Profile</a>
-        <a href="settings.php">Settings</a>
-        <a href="logout.php">Logout</a>
+        <a href="login.php">Login</a>
     </nav>
 </header>
 
