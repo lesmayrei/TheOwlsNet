@@ -112,13 +112,13 @@ session_start();
         <div class="logo">The Owls Net</div>
         <nav>
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="feed.php">Feed</a>
                 <a href="profile.php">Profile</a>
                 <a href="logout.php">Logout</a>
+                <a href="reactivate.php">Reactivate</a>
             <?php else: ?>
                 <a href="login.php">Login</a>
                 <a href="register.php">Register</a>
-                <a href="feed.php">Feed</a>
+                <a href="reactivate.php">Reactivate</a>
             <?php endif; ?>
         </nav>
     </header>
