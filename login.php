@@ -185,7 +185,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <nav>
         <a href="index.php">Home</a>
         <a href="register.php">Register</a>
-        <a href="feed.php">Feed</a>
     </nav>
 </header>
 
