@@ -4,6 +4,12 @@ require_once 'DB.php';
 
 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 
+// whose profile are we viewing? (default to yourself)
+$viewedUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $userId;
+if ($viewedUserId <= 0) {
+    $viewedUserId = $userId;
+}
+
 $name = 'Student Name';
 $handle = '@username';
 $email = 'yourname@owls.southernct.edu';
@@ -13,9 +19,53 @@ $followingCount = 0;
 $totalPosts = 0;
 $recentPosts = [];
 $picture = '';
+$profileId = null;
+$profileVisibility = 'public';
+$isFollowing = false;
 
-if ($userId > 0 && isset($conn) && !$conn->connect_error) {
-    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $userId LIMIT 1";
+// handle follow / unfollow actions
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['follow_action']) &&
+    $userId > 0 &&
+    $viewedUserId > 0 &&
+    $userId !== $viewedUserId &&
+    isset($conn) && !$conn->connect_error
+) {
+    // find the profile_id for the viewed user
+    $targetProfileId = null;
+    $sqlFindProfile = "SELECT profile_id FROM profiles WHERE user_id = $viewedUserId LIMIT 1";
+    $resFindProfile = $conn->query($sqlFindProfile);
+    if ($resFindProfile && $resFindProfile->num_rows === 1) {
+        $rowProf = $resFindProfile->fetch_assoc();
+        $targetProfileId = (int)$rowProf['profile_id'];
+    }
+
+    if ($targetProfileId !== null) {
+        if ($_POST['follow_action'] === 'follow') {
+            $stmt = $conn->prepare("INSERT INTO follows (user_id, profile_id) VALUES (?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("ii", $userId, $targetProfileId);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } elseif ($_POST['follow_action'] === 'unfollow') {
+            $stmt = $conn->prepare("DELETE FROM follows WHERE user_id = ? AND profile_id = ?");
+            if ($stmt) {
+                $stmt->bind_param("ii", $userId, $targetProfileId);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    }
+
+    // avoid resubmitting the form on refresh
+    header("Location: profile.php?user_id=" . $viewedUserId);
+    exit();
+}
+
+if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
+    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $viewedUserId LIMIT 1";
     $resUser = $conn->query($sqlUser);
 
     if ($resUser && $resUser->num_rows === 1) {
@@ -26,7 +76,7 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         $joinedAt = $u['created_at'];
     }
 
-    $sqlProfile = "SELECT profile_id, picture FROM profiles WHERE user_id = $userId LIMIT 1";
+    $sqlProfile = "SELECT profile_id, picture, profile_visibility FROM profiles WHERE user_id = $viewedUserId LIMIT 1";
     $resProfile = $conn->query($sqlProfile);
 
     if ($resProfile && $resProfile->num_rows === 1) {
@@ -35,30 +85,43 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
         if (isset($p['picture'])) {
             $picture = $p['picture'];
         }
+        if (isset($p['profile_visibility']) && $p['profile_visibility'] !== '') {
+            $profileVisibility = $p['profile_visibility'];
+        }
 
+        // followers count for this profile
         $sqlFollowersCount = "SELECT COUNT(*) AS c FROM follows WHERE profile_id = $profileId";
         $resFollowersCount = $conn->query($sqlFollowersCount);
         if ($resFollowersCount) {
             $rowF = $resFollowersCount->fetch_assoc();
             $followersCount = (int)$rowF['c'];
         }
+
+        // is the logged-in user following this profile?
+        if ($userId > 0 && $userId !== $viewedUserId) {
+            $sqlIsFollowing = "SELECT 1 FROM follows WHERE user_id = $userId AND profile_id = $profileId LIMIT 1";
+            $resIsFollowing = $conn->query($sqlIsFollowing);
+            if ($resIsFollowing && $resIsFollowing->num_rows === 1) {
+                $isFollowing = true;
+            }
+        }
     }
 
-    $sqlFollowingCount = "SELECT COUNT(*) AS c FROM follows WHERE user_id = $userId";
+    $sqlFollowingCount = "SELECT COUNT(*) AS c FROM follows WHERE user_id = $viewedUserId";
     $resFollowingCount = $conn->query($sqlFollowingCount);
     if ($resFollowingCount) {
         $rowFo = $resFollowingCount->fetch_assoc();
         $followingCount = (int)$rowFo['c'];
     }
 
-    $sqlPostsCount = "SELECT COUNT(*) AS c FROM posts WHERE author_id = $userId AND (deleted_at IS NULL)";
+    $sqlPostsCount = "SELECT COUNT(*) AS c FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL)";
     $resPostsCount = $conn->query($sqlPostsCount);
     if ($resPostsCount) {
         $rowP = $resPostsCount->fetch_assoc();
         $totalPosts = (int)$rowP['c'];
     }
 
-    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $userId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
+    $sqlRecent = "SELECT body_txt, created_at FROM posts WHERE author_id = $viewedUserId AND (deleted_at IS NULL) ORDER BY created_at DESC LIMIT 5";
     $resRecent = $conn->query($sqlRecent);
     if ($resRecent) {
         while ($row = $resRecent->fetch_assoc()) {
@@ -258,7 +321,16 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
             <div class="profile-username"><?php echo $handle; ?></div>
             <div class="profile-email"><?php echo $email; ?></div>
             <div class="profile-actions">
-                <a href="editprofile.php" class="btn">Edit profile</a>
+                <?php if ($userId > 0 && $userId === $viewedUserId): ?>
+                    <a href="editprofile.php" class="btn">Edit profile</a>
+                <?php elseif ($userId > 0 && $profileId !== null): ?>
+                    <form action="profile.php?user_id=<?php echo $viewedUserId; ?>" method="POST" style="display:inline;">
+                        <input type="hidden" name="follow_action" value="<?php echo $isFollowing ? 'unfollow' : 'follow'; ?>">
+                        <button type="submit" class="btn">
+                            <?php echo $isFollowing ? 'Unfollow' : 'Follow'; ?>
+                        </button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -266,7 +338,7 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
             <div class="stats-row">
                 <span>Followers</span>
                 <span>
-                    <a href="followers.php?user_id=<?php echo $userId; ?>" style="color:#38bdf8; text-decoration:none;">
+                    <a href="followers.php?user_id=<?php echo $viewedUserId; ?>" style="color:#38bdf8; text-decoration:none;">
                         <?php echo $followersCount; ?>
                     </a>
                 </span>
@@ -274,7 +346,7 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
             <div class="stats-row">
                 <span>Following</span>
                 <span>
-                    <a href="following.php?user_id=<?php echo $userId; ?>" style="color:#38bdf8; text-decoration:none;">
+                    <a href="following.php?user_id=<?php echo $viewedUserId; ?>" style="color:#38bdf8; text-decoration:none;">
                         <?php echo $followingCount; ?>
                     </a>
                 </span>
@@ -293,19 +365,30 @@ if ($userId > 0 && isset($conn) && !$conn->connect_error) {
     <!-- Recent posts section -->
     <section class="section">
         <h2>Recent posts</h2>
-        <?php if (empty($recentPosts)): ?>
-            <p style="color:#9ca3af; font-size:0.9rem;">You don't have any posts yet.</p>
+        <?php
+        $canViewPosts = !($profileVisibility === 'private' && $userId !== $viewedUserId && !$isFollowing);
+        ?>
+        <?php if (!$canViewPosts): ?>
+            <p style="color:#9ca3af; font-size:0.9rem;">
+                This profile is private. Follow to see their posts.
+            </p>
         <?php else: ?>
-        <ul class="posts-list">
-            <?php foreach ($recentPosts as $post): ?>
-                <li class="post-item">
-                    <div class="post-meta"><?php echo $post['created_at']; ?></div>
-                    <div class="post-body">
-                        <?php echo $post['body_txt']; ?>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+            <?php if (empty($recentPosts)): ?>
+                <p style="color:#9ca3af; font-size:0.9rem;">
+                    <?php echo ($viewedUserId === $userId) ? "You don't have any posts yet." : "This user hasn't posted yet."; ?>
+                </p>
+            <?php else: ?>
+            <ul class="posts-list">
+                <?php foreach ($recentPosts as $post): ?>
+                    <li class="post-item">
+                        <div class="post-meta"><?php echo $post['created_at']; ?></div>
+                        <div class="post-body">
+                            <?php echo $post['body_txt']; ?>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
         <?php endif; ?>
     </section>
 </main>
