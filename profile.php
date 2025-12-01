@@ -12,7 +12,7 @@ if ($viewedUserId <= 0) {
 
 $name = 'Student Name';
 $handle = '@username';
-$email = 'yourname@owls.southernct.edu';
+$email = 'yourname@southernct.edu';
 $joinedAt = '';
 $followersCount = 0;
 $followingCount = 0;
@@ -111,15 +111,127 @@ if (
 }
 
 if ($viewedUserId > 0 && isset($conn) && !$conn->connect_error) {
-    $sqlUser = "SELECT email, username, created_at FROM users WHERE user_id = $viewedUserId LIMIT 1";
+    $sqlUser = "
+        SELECT email, username, created_at, status
+        FROM users
+        WHERE user_id = $viewedUserId
+        LIMIT 1
+    ";
     $resUser = $conn->query($sqlUser);
 
     if ($resUser && $resUser->num_rows === 1) {
         $u = $resUser->fetch_assoc();
+
+        // if this account is not active, show a deactivated message and stop
+        if ($u['status'] !== 'active') {
+            echo "<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Account deactivated – The Owls Net</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #f9fafb;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .box {
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            max-width: 420px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 0.5rem 0;
+        }
+        p {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+        a {
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class='box'>
+        <h1>Account deactivated</h1>
+        <p>This account has been deactivated and is not currently visible on The Owls Net.</p>
+        <p><a href='index.php'>Return to home</a></p>
+    </div>
+</body>
+</html>";
+            exit();
+        }
+
         $email = $u['email'];
         $name = $u['username'];
         $handle = '@' . $u['username'];
         $joinedAt = $u['created_at'];
+    } else {
+        // no such user, show a simple not-found message and stop
+        echo "<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Profile not found – The Owls Net</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #f9fafb;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .box {
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            max-width: 420px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 0.5rem 0;
+        }
+        p {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+        a {
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class='box'>
+        <h1>Profile not found</h1>
+        <p>The profile you are trying to view does not exist.</p>
+        <p><a href='index.php'>Return to home</a></p>
+    </div>
+</body>
+</html>";
+        exit();
     }
 
     $sqlProfile = "SELECT profile_id, picture, profile_visibility FROM profiles WHERE user_id = $viewedUserId LIMIT 1";
